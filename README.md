@@ -50,7 +50,7 @@ sudo usermod -aG docker ubuntu
 
 
 
-Installation Phases:
+**Installation Phases:**
 
 1. UCP Installation: First phase is the create the UCP cluster that's composed of the three controllers (we'll call them `controller`,`replica1`, `replica2`) and N number of nodes defined by an auto-scaling group. 
 
@@ -96,7 +96,9 @@ This will output a SHA fingerprint(UCP_FINGERPRINT) that needs to be passed to o
 	sudo docker run --rm -it --name ucp -v -e UCP_ADMIN=admin -e UCP_ADMIN_PASSWORD=ddconaws /var/run/docker.sock:/var/run/docker.sock docker/ucp join --replica -D --san $UCPSAN
 
 ```
-	c. **TODO** Install the UCP Nodes using an autoscaling group.
+
+
+c. **TODO** Install the UCP Nodes using an autoscaling group.
 	
    - **TODO** Pass the SHA fingerprint and export it as an env var (UCP_FINGERPRINT)
    - **TODO** Get private IP of `controller` and pass it as env var ( export UCP_URL=https://PRIVATE_IP:443)
@@ -107,6 +109,6 @@ This will output a SHA fingerprint(UCP_FINGERPRINT) that needs to be passed to o
 ```
 	
 
-2. **TODO** DTR Installation
+2.**TODO** DTR Installation
 
 
