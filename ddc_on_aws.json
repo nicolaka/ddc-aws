@@ -1,0 +1,446 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+
+    "Description": "Docker for AWS",
+
+   "Parameters": {
+        "KeyName": {
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+            "Type": "AWS::EC2::KeyPair::KeyName",
+            "Default": "id_rsa_aws",
+            "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+        },
+        "InstanceType" : {
+              "Type" : "String",
+              "Description" : "EC2 HVM instance type (t2.micro, m3.medium, etc).",
+              "AllowedValues" : [
+                "t2.micro","t2.small","t2.medium","t2.large","m4.large","m4.xlarge","m4.2xlarge","m4.4xlarge","m4.10xlarge","m3.medium",
+                "m3.large","m3.xlarge","m3.2xlarge","c4.large","c4.xlarge","c4.2xlarge","c4.4xlarge","c4.8xlarge","c3.large","c3.xlarge",
+                "c3.2xlarge","c3.4xlarge","c3.8xlarge","r3.large","r3.xlarge","r3.2xlarge","r3.4xlarge","r3.8xlarge","i2.xlarge",
+                "i2.2xlarge","i2.4xlarge","i2.8xlarge" ],
+              "ConstraintDescription" : "Must be a valid EC2 HVM instance type.",
+              "Default" : "t2.micro"
+            },
+        "ClusterSize" : {
+          "Type" : "Number",
+          "Default" : "3",
+          "MinValue" : "3",
+          "MaxValue" : "12",
+          "Description" : "Number of nodes in the Swarm cluster (3-12)."
+        },        
+        "License" : {
+          "Type" : "String",
+          "Description" : "License"
+        },
+
+        "UCPSan" : {
+          "Type" : "String",
+          "Default" : "localhost",
+          "Description" : " Additional Subject Alternative Names for certs (e.g. --san foo1.bar.com --san foo2.bar.com)"
+        }
+    },
+    "Mappings": {
+
+        "VpcCidrs" : {
+          "us-east-1" : { "vpc" : "192.168.0.0/16", "pubsubnet1" : "192.168.33.0/24", "pubsubnet2" : "192.168.34.0/24", "pubsubnet3" : "192.168.35.0/24" },
+          "us-west-1" : { "vpc" : "192.168.0.0/16", "pubsubnet1" : "192.168.33.0/24", "pubsubnet2" : "192.168.34.0/24", "pubsubnet3" : "192.168.35.0/24" },
+          "us-west-2" : { "vpc" : "192.168.0.0/16", "pubsubnet1" : "192.168.33.0/24", "pubsubnet2" : "192.168.34.0/24", "pubsubnet3" : "192.168.35.0/24" }
+        },
+
+        "AWSInstanceType2Arch": {
+            "t2.micro": {
+                "Arch": "HVM64"
+            },
+            "t2.small": {
+                "Arch": "HVM64"
+            },
+            "t2.medium": {
+                "Arch": "HVM64"
+            },
+            "t2.large": {
+                "Arch": "HVM64"
+            },
+            "m3.medium": {
+                "Arch": "HVM64"
+            },
+            "m3.large": {
+                "Arch": "HVM64"
+            },
+            "m3.xlarge": {
+                "Arch": "HVM64"
+            },
+            "m3.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.large": {
+                "Arch": "HVM64"
+            },
+            "c3.xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "c4.large": {
+                "Arch": "HVM64"
+            },
+            "c4.xlarge": {
+                "Arch": "HVM64"
+            },
+            "c4.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "c4.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "c4.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "g2.2xlarge": {
+                "Arch": "HVMG2"
+            },
+            "r3.large": {
+                "Arch": "HVM64"
+            },
+            "r3.xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "d2.xlarge": {
+                "Arch": "HVM64"
+            },
+            "d2.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "d2.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "d2.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "hi1.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "hs1.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "cr1.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "cc2.8xlarge": {
+                "Arch": "HVM64"
+            }
+        },
+
+        "AWSRegionArch2AMI": {
+            "us-east-1": {
+                "HVM64": "ami-0f8bce65",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "us-west-2": {
+                "HVM64": "ami-534d5d32",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "us-west-1": {
+                "HVM64": "NOT_SUPPORTED",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "eu-west-1": {
+                "HVM64": "NOT_SUPPORTED",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "eu-central-1": {
+                "HVM64": "NOT_SUPPORTED",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "ap-northeast-1": {
+                "HVM64": "NOT_SUPPORTED",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "ap-southeast-1": {
+                "HVM64": "NOT_SUPPORTED",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "ap-southeast-2": {
+                "HVM64": "NOT_SUPPORTED",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "sa-east-1": {
+                "HVM64": "NOT_SUPPORTED",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "cn-north-1": {
+                "HVM64": "NOT_SUPPORTED",
+                "HVMG2": "NOT_SUPPORTED"
+            }
+        }
+    },
+    "Resources": {
+
+    "Vpc" : {
+          "Type" : "AWS::EC2::VPC",
+          "Properties" : {
+            "CidrBlock" : { "Fn::FindInMap" : [ "VpcCidrs", { "Ref" : "AWS::Region" }, "vpc" ] },
+            "EnableDnsSupport" : "true",
+            "EnableDnsHostnames" : "true",
+            "Tags": [
+              { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "VPC"] ] } }
+            ]
+          }
+        },
+
+    "PubSubnetAz1" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "Vpc" },
+        "CidrBlock" : { "Fn::FindInMap" : [ "VpcCidrs", { "Ref" : "AWS::Region" }, "pubsubnet1" ] },
+        "AvailabilityZone" : { "Fn::Select" : [ "0", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
+        "Tags": [
+          { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "Subnet1"] ] } }
+        ]
+      }
+    },
+
+    "PubSubnetAz2" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "Vpc" },
+        "CidrBlock" : { "Fn::FindInMap" : [ "VpcCidrs", { "Ref" : "AWS::Region" }, "pubsubnet2" ] },
+        "AvailabilityZone" :  { "Fn::Select" : [ "1", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
+        "Tags": [
+          { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "Subnet2"] ] } }
+        ]
+      }
+    },
+
+    "PubSubnetAz3" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "Vpc" },
+        "CidrBlock" : { "Fn::FindInMap" : [ "VpcCidrs", { "Ref" : "AWS::Region" }, "pubsubnet3" ] },
+        "AvailabilityZone" :  { "Fn::Select" : [ "2", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
+        "Tags": [
+          { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "Subnet3"] ] } }
+        ]
+      }
+    },
+
+    "InternetGateway" : {
+       "Type" : "AWS::EC2::InternetGateway",
+       "Properties" : {
+         "Tags": [
+           { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "IGW"] ] } }
+         ]
+       }
+     },
+
+     "AttachGateway" : {
+       "Type" : "AWS::EC2::VPCGatewayAttachment",
+       "Properties" : {
+         "VpcId" : { "Ref" : "Vpc" },
+         "InternetGatewayId" : { "Ref" : "InternetGateway" }
+       }
+     },
+
+     "RouteViaIgw" : {
+       "Type" : "AWS::EC2::RouteTable",
+       "Properties" : {
+         "VpcId" : { "Ref" : "Vpc"}
+       }
+     },
+
+     "PublicRouteViaIgw" : {
+       "Type" : "AWS::EC2::Route",
+       "Properties" : {
+         "RouteTableId" : { "Ref" : "RouteViaIgw" },
+         "DestinationCidrBlock" : "0.0.0.0/0",
+         "GatewayId" : { "Ref" : "InternetGateway" }
+       }
+     },
+
+     "PubSubnet1RouteTableAssociation" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PubSubnetAz1" },
+        "RouteTableId" : { "Ref" : "RouteViaIgw" }
+      }
+    },
+
+    "PubSubnet2RouteTableAssociation" : {
+     "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+     "Properties" : {
+       "SubnetId" : { "Ref" : "PubSubnetAz2" },
+       "RouteTableId" : { "Ref" : "RouteViaIgw" }
+     }
+    },
+
+    "PubSubnet3RouteTableAssociation" : {
+    "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+
+    "Properties" : {
+      "SubnetId" : { "Ref" : "PubSubnetAz3" },
+      "RouteTableId" : { "Ref" : "RouteViaIgw" }
+    }
+    },
+    "WideOpenVpcSG": {
+        "Type": "AWS::EC2::SecurityGroup",
+        "Properties": {
+            "VpcId": {
+                "Ref": "Vpc"
+            },
+            "GroupDescription": "Wide open",
+
+            "SecurityGroupIngress": [{
+                "IpProtocol": "-1",
+                "FromPort": "0",
+                "ToPort": "65535",
+                "CidrIp": "0.0.0.0/0"
+            }]
+
+        }
+    },
+    "controller": {
+            "DependsOn" : "InternetGateway",
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "AvailabilityZone" : { "Fn::Select" : [ "0", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
+                "InstanceType": {"Ref" : "InstanceType"},
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
+                "ImageId": {
+                    "Fn::FindInMap": ["AWSRegionArch2AMI", {
+                        "Ref": "AWS::Region"
+                    }, {
+                        "Fn::FindInMap": ["AWSInstanceType2Arch", {"Ref" : "InstanceType"}, "Arch"]
+                    }]
+                },
+                "NetworkInterfaces": [ {
+                  "AssociatePublicIpAddress": "true",
+                  "DeleteOnTermination" : "true",
+                  "DeviceIndex": "0",
+                  "SubnetId": { "Ref" : "PubSubnetAz1" },
+                  "GroupSet" : [ { "Ref" : "WideOpenVpcSG" } ]
+                } ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "", [
+                                "#!/bin/bash\n",
+                                "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
+                                "sudo hostname ucp-controller\n",
+                                "wget -qO- https://get.docker.com/ | sh \n",
+                                "sudo usermod -aG docker ubuntu \n",
+                                "echo '",
+                                {
+                                  "Ref": "License"
+                                },
+                                "' >> /home/ubuntu/docker_subscription.lic \n",
+                                "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:latest install -D --fresh-install --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
+                                  {
+                                    "Ref": "UCPSAN"
+                                  },
+                                  "\n"
+                            ]
+                        ]
+                    }
+                },
+                "Tags": [
+                  { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "Manager" ] ] } }
+                ]
+            }
+    },
+
+
+    "NodeAsg" : {
+              "DependsOn" : "manager",
+              "Type" : "AWS::AutoScaling::AutoScalingGroup",
+              "Properties" : {
+                "AvailabilityZones" : { "Fn::GetAZs" : { "Ref" : "AWS::Region" } },
+                "VPCZoneIdentifier" : [ { "Fn::Join" : [",", [ { "Ref" : "PubSubnetAz1" }, { "Ref" : "PubSubnetAz2" }, { "Ref" : "PubSubnetAz3" } ] ] } ],
+                "LaunchConfigurationName" : { "Ref" : "node" },
+                "MinSize" : "3",
+                "MaxSize" : "12",
+                "DesiredCapacity" : { "Ref" : "ClusterSize"},
+                "Tags": [
+                  { "Key" : "Name",
+                    "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "Node" ] ] },
+                    "PropagateAtLaunch" : "true" }
+                ]
+              }
+            },
+
+        "node": {
+            "DependsOn": "manager",
+            "Type": "AWS::AutoScaling::LaunchConfiguration",
+            "Properties": {
+                "InstanceType": {"Ref" : "InstanceType"},
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
+                "ImageId": {
+                    "Fn::FindInMap": ["AWSRegionArch2AMI", {
+                        "Ref": "AWS::Region"
+                    }, {
+                        "Fn::FindInMap": ["AWSInstanceType2Arch", {"Ref" : "InstanceType"}, "Arch"]
+                    }]
+                },
+                "AssociatePublicIpAddress": "true",
+                "SecurityGroups": [ { "Ref" : "WideOpenVpcSG"} ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "", [
+                                "#!/bin/bash\n",
+                                "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
+                                "wget -qO- https://get.docker.com/ | sh \n",
+                                "sudo usermod -aG docker ubuntu \n",
+                                "sudo docker run --rm -it --name ucp -v -e UCP_ADMIN=admin -e UCP_ADMIN_PASSWORD=ddconaws /var/run/docker.sock:/var/run/docker.sock docker/ucp join -D"
+                            ]
+                        ]
+                    }
+                }
+            }
+        }
+    }, 
+    "Outputs": {
+        "managerPrivateIP": {
+            "Description": "Private IP of manager",
+            "Value": {
+                "Fn::GetAtt": ["controller", "PrivateIp"]
+            }
+        },
+        "managerPublicIP": {
+            "Description": "Public IP of manager",
+            "Value": {
+                "Fn::GetAtt": ["controller", "PublicIp"]
+            }
+        }
+    }
+}
