@@ -27,13 +27,13 @@
           "MinValue" : "3",
           "MaxValue" : "12",
           "Description" : "Number of nodes in the Swarm cluster (3-12)."
-        },        
+        },
         "License" : {
           "Type" : "String",
           "Description" : "License"
         },
 
-        "UCPSan" : {
+        "UCPSAN" : {
           "Type" : "String",
           "Default" : "localhost",
           "Description" : " Additional Subject Alternative Names for certs (e.g. --san foo1.bar.com --san foo2.bar.com)"
@@ -325,7 +325,7 @@
 
         }
     },
-    "controller": {
+    "Manager": {
             "DependsOn" : "InternetGateway",
             "Type": "AWS::EC2::Instance",
             "Properties": {
@@ -379,7 +379,7 @@
 
 
     "NodeAsg" : {
-              "DependsOn" : "manager",
+              "DependsOn" : "Manager",
               "Type" : "AWS::AutoScaling::AutoScalingGroup",
               "Properties" : {
                 "AvailabilityZones" : { "Fn::GetAZs" : { "Ref" : "AWS::Region" } },
@@ -397,7 +397,7 @@
             },
 
         "node": {
-            "DependsOn": "manager",
+            "DependsOn": "Manager",
             "Type": "AWS::AutoScaling::LaunchConfiguration",
             "Properties": {
                 "InstanceType": {"Ref" : "InstanceType"},
@@ -428,18 +428,18 @@
                 }
             }
         }
-    }, 
+    },
     "Outputs": {
-        "managerPrivateIP": {
-            "Description": "Private IP of manager",
+        "ManagerPrivateIP": {
+            "Description": "Private IP of Manager",
             "Value": {
-                "Fn::GetAtt": ["controller", "PrivateIp"]
+                "Fn::GetAtt": ["Manager", "PrivateIp"]
             }
         },
-        "managerPublicIP": {
-            "Description": "Public IP of manager",
+        "ManagerPublicIP": {
+            "Description": "Public IP of Manager",
             "Value": {
-                "Fn::GetAtt": ["controller", "PublicIp"]
+                "Fn::GetAtt": ["Manager", "PublicIp"]
             }
         }
     }
