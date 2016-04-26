@@ -27,13 +27,13 @@
           "MinValue" : "3",
           "MaxValue" : "12",
           "Description" : "Number of nodes in the Swarm cluster (3-12)."
-        },        
+        },    
         "License" : {
           "Type" : "String",
           "Description" : "License"
         },
 
-        "UCPSan" : {
+        "UCPSAN" : {
           "Type" : "String",
           "Default" : "localhost",
           "Description" : " Additional Subject Alternative Names for certs (e.g. --san foo1.bar.com --san foo2.bar.com)"
@@ -372,14 +372,14 @@
                     }
                 },
                 "Tags": [
-                  { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "Manager" ] ] } }
+                  { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "controller" ] ] } }
                 ]
             }
     },
 
 
     "NodeAsg" : {
-              "DependsOn" : "manager",
+              "DependsOn" : "controller",
               "Type" : "AWS::AutoScaling::AutoScalingGroup",
               "Properties" : {
                 "AvailabilityZones" : { "Fn::GetAZs" : { "Ref" : "AWS::Region" } },
@@ -397,7 +397,7 @@
             },
 
         "node": {
-            "DependsOn": "manager",
+            "DependsOn": "controller",
             "Type": "AWS::AutoScaling::LaunchConfiguration",
             "Properties": {
                 "InstanceType": {"Ref" : "InstanceType"},
@@ -421,6 +421,13 @@
                                 "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
                                 "wget -qO- https://get.docker.com/ | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
+                                "export UCP_URL=",
+                                {
+                                "Fn::GetAtt": ["controller", "PrivateIp"]
+                                },
+                                "curl --insecure https://",
+                                "/ca > ca.pem ",
+                                "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )",
                                 "sudo docker run --rm -it --name ucp -v -e UCP_ADMIN=admin -e UCP_ADMIN_PASSWORD=ddconaws /var/run/docker.sock:/var/run/docker.sock docker/ucp join -D"
                             ]
                         ]
@@ -430,14 +437,14 @@
         }
     }, 
     "Outputs": {
-        "managerPrivateIP": {
-            "Description": "Private IP of manager",
+        "controllerPrivateIP": {
+            "Description": "Private IP of controller",
             "Value": {
                 "Fn::GetAtt": ["controller", "PrivateIp"]
             }
         },
-        "managerPublicIP": {
-            "Description": "Public IP of manager",
+        "controllerPublicIP": {
+            "Description": "Public IP of controller",
             "Value": {
                 "Fn::GetAtt": ["controller", "PublicIp"]
             }
