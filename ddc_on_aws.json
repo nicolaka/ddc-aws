@@ -425,7 +425,7 @@
                                 {
                                 "Fn::GetAtt": ["controller", "PrivateIp"]
                                 },
-                                "curl --insecure https://",
+                                "curl --insecure https://$UCP_URL",
                                 "/ca > ca.pem ",
                                 "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )",
                                 "sudo docker run --rm -it --name ucp -v -e UCP_ADMIN=admin -e UCP_ADMIN_PASSWORD=ddconaws /var/run/docker.sock:/var/run/docker.sock docker/ucp join -D"
