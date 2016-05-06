@@ -363,7 +363,7 @@
                                   "Ref": "License"
                                 },
                                 "' >> /home/ubuntu/docker_subscription.lic \n",
-                                "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:latest install -D --fresh-install --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
+                                "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:latest install -D --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
                                   {
                                     "Ref": "UCPSAN"
                                   },
@@ -446,13 +446,14 @@
                                 "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
                                 "wget -qO- https://get.docker.com/ | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
-                                "export UCP_URL=",
+                                "export UCP_URL=https://",
                                 {
                                 "Fn::GetAtt": ["controller", "PrivateIp"]
                                 },
-                                "curl --insecure https://$UCP_URL/ca > ca.pem ",
-                                "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )",
-                                "sudo docker run --rm -it --name ucp -v -e UCP_ADMIN=admin -e UCP_ADMIN_PASSWORD=ddconaws /var/run/docker.sock:/var/run/docker.sock docker/ucp join -D"
+                                "\n",
+                                "curl --insecure $UCP_URL/ca > ca.pem \n",
+                                "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' ) \n",
+                                "sudo -E docker run --rm -it --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp join --url $UCP_URL --fingerprint $UCP_FINGERPRINT -D \n"
                             ]
                         ]
                     }
