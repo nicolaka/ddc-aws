@@ -332,7 +332,7 @@
     },
     "WaitCondition01": {
         "Type": "AWS::CloudFormation::WaitCondition",
-        "DependsOn": "controller",
+        "DependsOn": "Controller",
         "Properties": {
             "Handle": {
                 "Ref": "WaitHandle01"
@@ -340,7 +340,7 @@
             "Timeout": "600"
         }
     },
-    "controller": {
+    "Controller": {
             "DependsOn" : "InternetGateway",
             "Type": "AWS::EC2::Instance",
             "Properties": {
@@ -366,48 +366,62 @@
                 "UserData": {
                     "Fn::Base64": {
                         "Fn::Join": [
-                            "", [
-                                "#!/bin/bash\n",
-                                "#Install CFN-helper package\n",
-                                "apt-get -y install python-pip\n",
-                                "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n",
-                                "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup \n",
-                                "chmod +x /etc/init.d/cfn-hup \n",
-                                "update-rc.d cfn-hup defaults \n ",
-                                "service cfn-hup start \n",
-                                "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
-                                "sudo hostname ucp-controller\n",
-                                "wget -qO- https://get.docker.com/ | sh \n",
-                                "sudo usermod -aG docker ubuntu \n",
-                                "echo '",
+                            "\n", [
+                                "#!/bin/bash -ex",
+                                "#Install CFN-helper package",
+                                "apt-get update -y",
+                                "apt-get -y install python-pip",
+                                "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
+                                "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup",
+                                "chmod +x /etc/init.d/cfn-hup",
+                                "update-rc.d cfn-hup defaults",
+                                "service cfn-hup start",
                                 {
-                                  "Ref": "License"
-                                },
-                                "' >> /home/ubuntu/docker_subscription.lic \n",
-                                "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:latest install -D --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
-                                  {
-                                    "Ref": "UCPSAN"
-                                  },
-                                  "\n",
-                                  "#############################\n",
-                                  "# Wait Handle: If condition is true, signal CFN, else try again. Wait Handle will tear down stack if timeout exceeded\n",
-                                  "checkcontroller()\n",
-                                  "{\n",
-                                  "if (( 0 == 0 ));\n",
-                                  "then /opt/aws/bin/cfn-signal -s true '",
-                                  {
-                                      "Ref": "WaitHandle01"
-                                  },
-                                  "'\n",
-                                  "else sleep 3 && echo \"checking again until I timeout..\" && checkcontroller\n",
-                                  "fi\n",
-                                  "}\n"
+                                  "Fn::Join": [
+                                    "",
+                                    [
+                                      "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
+                                      "sudo hostname ucp-controller\n",
+                                      "wget -qO- https://get.docker.com/ | sh\n",
+                                      "sudo usermod -aG docker ubuntu\n",
+                                      "echo '",
+                                      {
+                                        "Ref": "License"
+                                      },
+                                      "' >> /home/ubuntu/docker_subscription.lic\n",
+                                      "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:latest install -D --host-address $PRIVATE_IP --san $PRIVATE_IP --san\n",
+                                        {
+                                          "Ref": "UCPSAN"
+                                        },
+                                      "#############################\n",
+                                      "# Wait Handle: If condition is true, signal CFN, else try again. Wait Handle will tear down stack if timeout exceeded\n",
+                                      "checkcontroller()\n",
+                                      "{\n",
+                                      "if (( 0 == 0 ));\n",
+                                      "then /usr/local/bin/cfn-signal -s true '",
+                                        {
+                                            "Ref": "WaitHandle01"
+                                        },
+                                      "'\n",
+                                      "else sleep 3 && echo \"checking again until I timeout..\" && checkcontroller\n",
+                                      "fi\n",
+                                      "}\n"
+                                    ]
+
+                                  ]
+                                }
+
+
+
+
+
+
                             ]
                         ]
                     }
                 },
                 "Tags": [
-                  { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "controller" ] ] } }
+                  { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "Controller" ] ] } }
                 ]
             }
     },
@@ -456,7 +470,7 @@
             },
 
         "node": {
-            "DependsOn": "controller",
+            "DependsOn": "Controller",
             "Type": "AWS::AutoScaling::LaunchConfiguration",
             "Properties": {
                 "InstanceType": {"Ref" : "InstanceType"},
@@ -476,18 +490,17 @@
                     "Fn::Base64": {
                         "Fn::Join": [
                             "", [
-                                "#!/bin/bash\n",
+                                "#!/bin/bash -ex\n",
                                 "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
-                                "wget -qO- https://get.docker.com/ | sh \n",
-                                "sudo usermod -aG docker ubuntu \n",
+                                "wget -qO- https://get.docker.com/ | sh\n",
+                                "sudo usermod -aG docker ubuntu\n",
                                 "export UCP_URL=https://",
                                 {
-                                "Fn::GetAtt": ["controller", "PrivateIp"]
+                                "Fn::GetAtt": ["Controller", "PrivateIp"]
                                 },
-                                "\n",
-                                "curl --insecure $UCP_URL/ca > ca.pem \n",
-                                "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' ) \n",
-                                "sudo -E docker run --rm -it --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp join --url $UCP_URL --fingerprint $UCP_FINGERPRINT -D \n"
+                                "curl --insecure $UCP_URL/ca > ca.pem\n",
+                                "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
+                                "sudo -E docker run --rm -it --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp join --url $UCP_URL --fingerprint $UCP_FINGERPRINT -D\n"
                             ]
                         ]
                     }
@@ -497,15 +510,15 @@
     },
     "Outputs": {
         "controllerPrivateIP": {
-            "Description": "Private IP of controller",
+            "Description": "Private IP of Controller",
             "Value": {
-                "Fn::GetAtt": ["controller", "PrivateIp"]
+                "Fn::GetAtt": ["Controller", "PrivateIp"]
             }
         },
         "controllerPublicIP": {
-            "Description": "Public IP of controller",
+            "Description": "Public IP of Controller",
             "Value": {
-                "Fn::GetAtt": ["controller", "PublicIp"]
+                "Fn::GetAtt": ["Controller", "PublicIp"]
             }
         }
     }
