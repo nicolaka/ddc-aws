@@ -389,19 +389,19 @@
                                         "Ref": "License"
                                       },
                                       "' >> /home/ubuntu/docker_subscription.lic\n",
-                                      "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:latest install -D --host-address $PRIVATE_IP --san $PRIVATE_IP --san\n",
-                                        {
-                                          "Ref": "UCPSAN"
-                                        },
-                                      "#############################\n",
+                                      "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:latest install -D --host-address $PRIVATE_IP --san $PRIVATE_IP --san '",
+                                      {
+                                        "Ref": "UCPSAN"
+                                      },
+                                      "'\n",
                                       "# Wait Handle: If condition is true, signal CFN, else try again. Wait Handle will tear down stack if timeout exceeded\n",
                                       "checkcontroller()\n",
                                       "{\n",
                                       "if (( 0 == 0 ));\n",
                                       "then /usr/local/bin/cfn-signal -s true '",
-                                        {
-                                            "Ref": "WaitHandle01"
-                                        },
+                                      {
+                                          "Ref": "WaitHandle01"
+                                      },
                                       "'\n",
                                       "else sleep 3 && echo \"checking again until I timeout..\" && checkcontroller\n",
                                       "fi\n",
