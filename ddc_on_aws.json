@@ -451,7 +451,16 @@
                                 "Fn::GetAtt": ["controller", "PrivateIp"]
                                 },
                                 "\n",
-                                "curl --insecure $UCP_URL/ca > ca.pem \n",
+                                "while true \n",
+                                "do \n",
+                                "STATUSCODE=$(curl --insecure --silent --output /dev/null --write-out '%{http_code}' $UCP_URL/_ping) \n",
+                                "echo Status Code is $STATUSCODE \n ",
+                                "if test $STATUSCODE -eq 200; then \n",
+                                "exit 0; \n",
+                                "fi \n ",
+                                "sleep 5 \n",
+                                "done \n",
+                                "curl --insecure $UCP_URL/ca > ca.pem \n",  
                                 "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' ) \n",
                                 "sudo -E docker run --rm -it --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp join --url $UCP_URL --fingerprint $UCP_FINGERPRINT -D \n"
                             ]
