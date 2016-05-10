@@ -368,19 +368,6 @@
                         "Fn::Join": [
                             "", [
                                 "#!/bin/bash\n",
-                                "#############################\n",
-                                "# Wait Handle: If condition is true, signal CFN, else try again. Wait Handle will tear down stack if timeout exceeded\n",
-                                "checkcontroller()\n",
-                                "{\n",
-                                "if (( 0 == 0 ));\n",
-                                "then /opt/aws/bin/cfn-signal -s true '",
-                                {
-                                    "Ref": "WaitHandle01"
-                                },
-                                "'\n",
-                                "else sleep 3 && echo \"checking again until I timeout..\" && checkcontroller\n",
-                                "fi\n",
-                                "}\n",
                                 "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
                                 "sudo hostname ucp-controller\n",
                                 "wget -qO- https://get.docker.com/ | sh \n",
@@ -394,7 +381,20 @@
                                   {
                                     "Ref": "UCPSAN"
                                   },
-                                  "\n"
+                                  "\n",
+                                  "#############################\n",
+                                  "# Wait Handle: If condition is true, signal CFN, else try again. Wait Handle will tear down stack if timeout exceeded\n",
+                                  "checkcontroller()\n",
+                                  "{\n",
+                                  "if (( 0 == 0 ));\n",
+                                  "then /opt/aws/bin/cfn-signal -s true '",
+                                  {
+                                      "Ref": "WaitHandle01"
+                                  },
+                                  "'\n",
+                                  "else sleep 3 && echo \"checking again until I timeout..\" && checkcontroller\n",
+                                  "fi\n",
+                                  "}\n"
                             ]
                         ]
                     }
