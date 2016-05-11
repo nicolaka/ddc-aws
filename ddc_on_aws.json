@@ -405,7 +405,8 @@
                                       "'\n",
                                       "else sleep 3 && echo \"checking again until I timeout..\" && checkcontroller\n",
                                       "fi\n",
-                                      "}\n"
+                                      "}\n",
+                                      "checkcontroller\n"
                                     ]
 
                                   ]
