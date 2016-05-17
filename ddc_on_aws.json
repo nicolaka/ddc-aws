@@ -10,6 +10,10 @@
             "Default": "id_rsa_aws",
             "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
         },
+        "CNAME" : {
+          "Type" : "String",
+          "Description" : "Enter a CNAME for your Internal Hosted Zone"
+        },
         "InstanceType" : {
               "Type" : "String",
               "Description" : "EC2 HVM instance type (t2.micro, m3.medium, etc).",
