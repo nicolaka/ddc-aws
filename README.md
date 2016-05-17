@@ -88,10 +88,6 @@ sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSW
    
 ```
 
-	
-2. TODO: DTR 2.0 Installation
-
-
 **TODOs**:
 - Version UCP : hardcode UCP version for compatibility
 - ELB: Create an ELB for UCP, attach the controllers to it.
@@ -99,6 +95,7 @@ sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSW
 - Create an A record for UCPSAN to be mapped to the ELB
 - Root CA backup
 - Potentially Autoscaling group for controllers ( need to ensure odd number though)
+- DTR 2.0 Installation
 
 
 
