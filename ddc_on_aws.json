@@ -326,7 +326,7 @@
         "VPCs" : [ {"VPCId": { "Ref" : "vpc" }, "VPCRegion": { "Ref" : "AWS::Region" } }]
       }
     },
-    "controller": {
+    "controller1": {
             "DependsOn" : "InternetGateway",
             "Type": "AWS::EC2::Instance",
             "Properties": {
@@ -355,7 +355,7 @@
                             "", [
                                 "#!/bin/bash\n",
                                 "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
-                                "sudo hostname ucp-controller\n",
+                                "sudo hostname ucp-controller-01\n",
                                 "wget -qO- https://get.docker.com/ | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
                                 "echo '",
@@ -373,10 +373,135 @@
                     }
                 },
                 "Tags": [
-                  { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "controller" ] ] } }
+                  { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "controller1" ] ] } }
                 ]
             }
     },
+        "controller2": {
+            "DependsOn" : "controller1",
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "AvailabilityZone" : { "Fn::Select" : [ "0", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
+                "InstanceType": {"Ref" : "InstanceType"},
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
+                "ImageId": {
+                    "Fn::FindInMap": ["AWSRegionArch2AMI", {
+                        "Ref": "AWS::Region"
+                    }, {
+                        "Fn::FindInMap": ["AWSInstanceType2Arch", {"Ref" : "InstanceType"}, "Arch"]
+                    }]
+                },
+                "NetworkInterfaces": [ {
+                  "AssociatePublicIpAddress": "true",
+                  "DeleteOnTermination" : "true",
+                  "DeviceIndex": "0",
+                  "SubnetId": { "Ref" : "PubSubnetAz1" },
+                  "GroupSet" : [ { "Ref" : "WideOpenVpcSG" } ]
+                } ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "", [
+                                "#!/bin/bash\n",
+                                "sudo hostname ucp-controller-02\n",
+                                "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
+                                "wget -qO- https://get.docker.com/ | sh \n",
+                                "sudo usermod -aG docker ubuntu \n",
+                                "export UCP_URL=https://",
+                                {
+                                "Fn::GetAtt": ["controller1", "PrivateIp"]
+                                },
+                                "\n",
+                                "while true\n",
+                                " do\n",
+                                " STATUSCODE=$(curl --insecure --silent --output /dev/null --write-out '%{http_code}' $UCP_URL/_ping)\n",
+                                " echo Status Code is $STATUSCODE\n",
+                                " if test $STATUSCODE -eq 200; then\n",
+                                "  break;\n",
+                                " fi\n",
+                                " sleep 5\n",
+                                "done\n",
+                                "curl --insecure $UCP_URL/ca > ca.pem\n",  
+                                "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
+                                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp join  --replica  --url $UCP_URL --fingerprint $UCP_FINGERPRINT -D --san ",
+                                  {
+                                    "Ref": "UCPSAN"
+                                  },
+                                  "\n"
+                            ]
+                        ]
+                    }
+                },
+                "Tags": [
+                  { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "controller2" ] ] } }
+                ]
+            }
+    },
+    "controller3": {
+            "DependsOn" : "controller1",
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "AvailabilityZone" : { "Fn::Select" : [ "0", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
+                "InstanceType": {"Ref" : "InstanceType"},
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
+                "ImageId": {
+                    "Fn::FindInMap": ["AWSRegionArch2AMI", {
+                        "Ref": "AWS::Region"
+                    }, {
+                        "Fn::FindInMap": ["AWSInstanceType2Arch", {"Ref" : "InstanceType"}, "Arch"]
+                    }]
+                },
+                "NetworkInterfaces": [ {
+                  "AssociatePublicIpAddress": "true",
+                  "DeleteOnTermination" : "true",
+                  "DeviceIndex": "0",
+                  "SubnetId": { "Ref" : "PubSubnetAz1" },
+                  "GroupSet" : [ { "Ref" : "WideOpenVpcSG" } ]
+                } ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "", [
+                                "#!/bin/bash\n",
+                                "sudo hostname ucp-controller-03\n",
+                                "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
+                                "wget -qO- https://get.docker.com/ | sh \n",
+                                "sudo usermod -aG docker ubuntu \n",
+                                "export UCP_URL=https://",
+                                {
+                                "Fn::GetAtt": ["controller1", "PrivateIp"]
+                                },
+                                "\n",
+                                "while true\n",
+                                " do\n",
+                                " STATUSCODE=$(curl --insecure --silent --output /dev/null --write-out '%{http_code}' $UCP_URL/_ping)\n",
+                                " echo Status Code is $STATUSCODE\n",
+                                " if test $STATUSCODE -eq 200; then\n",
+                                "  break;\n",
+                                " fi\n",
+                                " sleep 5\n",
+                                "done\n",
+                                "curl --insecure $UCP_URL/ca > ca.pem\n",  
+                                "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
+                                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp join  --replica  --url $UCP_URL --fingerprint $UCP_FINGERPRINT -D --san ",
+                                  {
+                                    "Ref": "UCPSAN"
+                                  },
+                                  "\n"
+                            ]
+                        ]
+                    }
+                },
+                "Tags": [
+                  { "Key" : "Name", "Value" : { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName"}, "controller3" ] ] } }
+                ]
+            }
+    },      
+
     "NodeAsgElasticLoadBalancer" : {
       "Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
       "Properties" : {
@@ -404,8 +529,9 @@
         ]
       }
     },
+
     "NodeAsg" : {
-              "DependsOn" : "controller",
+              "DependsOn" : "controller1",
               "Type" : "AWS::AutoScaling::AutoScalingGroup",
               "Properties" : {
                 "VPCZoneIdentifier" : [ { "Fn::Join" : [",", [ { "Ref" : "PubSubnetAz1" }, { "Ref" : "PubSubnetAz2" } ] ] } ],
@@ -422,7 +548,7 @@
             },
 
         "node": {
-            "DependsOn": "controller",
+            "DependsOn": "controller1",
             "Type": "AWS::AutoScaling::LaunchConfiguration",
             "Properties": {
                 "InstanceType": {"Ref" : "InstanceType"},
@@ -448,21 +574,21 @@
                                 "sudo usermod -aG docker ubuntu \n",
                                 "export UCP_URL=https://",
                                 {
-                                "Fn::GetAtt": ["controller", "PrivateIp"]
+                                "Fn::GetAtt": ["controller1", "PrivateIp"]
                                 },
                                 "\n",
-                                "while true \n",
-                                "do \n",
-                                "STATUSCODE=$(curl --insecure --silent --output /dev/null --write-out '%{http_code}' $UCP_URL/_ping) \n",
-                                "echo Status Code is $STATUSCODE \n ",
-                                "if test $STATUSCODE -eq 200; then \n",
-                                "exit 0; \n",
-                                "fi \n ",
-                                "sleep 5 \n",
-                                "done \n",
-                                "curl --insecure $UCP_URL/ca > ca.pem \n",  
-                                "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' ) \n",
-                                "sudo -E docker run --rm -it --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp join --url $UCP_URL --fingerprint $UCP_FINGERPRINT -D \n"
+                                "while true\n",
+                                " do\n",
+                                " STATUSCODE=$(curl --insecure --silent --output /dev/null --write-out '%{http_code}' $UCP_URL/_ping)\n",
+                                " echo Status Code is $STATUSCODE\n",
+                                " if test $STATUSCODE -eq 200; then\n",
+                                "  break;\n",
+                                " fi\n",
+                                " sleep 5\n",
+                                "done\n",
+                                "curl --insecure $UCP_URL/ca > ca.pem\n",  
+                                "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
+                                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp join --url $UCP_URL --fingerprint $UCP_FINGERPRINT -D\n"
                             ]
                         ]
                     }
@@ -472,15 +598,15 @@
     },
     "Outputs": {
         "controllerPrivateIP": {
-            "Description": "Private IP of controller",
+            "Description": "Private IP of controller1",
             "Value": {
-                "Fn::GetAtt": ["controller", "PrivateIp"]
+                "Fn::GetAtt": ["controller1", "PrivateIp"]
             }
         },
         "controllerPublicIP": {
-            "Description": "Public IP of controller",
+            "Description": "Public IP of controller1",
             "Value": {
-                "Fn::GetAtt": ["controller", "PublicIp"]
+                "Fn::GetAtt": ["controller1", "PublicIp"]
             }
         }
     }
