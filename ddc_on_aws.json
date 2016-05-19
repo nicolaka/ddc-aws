@@ -627,7 +627,7 @@
         "ELBAlias": {
             "Type": "AWS::Route53::RecordSetGroup",
             "Properties": {
-                "HostedZoneName": [
+                "HostedZoneName":
                     {
                         "Fn::Join": [
                             "",
@@ -638,8 +638,7 @@
                                 }
                             ]
                         ]
-                    }
-                ],
+                    },
                 "Comment": "Alias targeted Controller ELB.",
                 "RecordSets": [
                     {
@@ -900,9 +899,9 @@
                 "DesiredCapacity": {
                     "Ref": "ClusterSize"
                 },
-                "LoadBalancerNames": {
+                "LoadBalancerNames": [{
                     "Ref": "UCPNodeElasticLoadBalancer"
-                },
+                }],
                 "Tags": [
                     {
                         "Key": "Name",
@@ -1015,9 +1014,9 @@
                 "MinSize": "2",
                 "MaxSize": "2",
                 "DesiredCapacity": "2",
-                "LoadBalancerNames": {
+                "LoadBalancerNames": [{
                     "Ref": "ControllerElasticLoadBalancer"
-                },
+                }],
                 "Tags": [
                     {
                         "Key": "Name",
