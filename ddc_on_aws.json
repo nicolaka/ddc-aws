@@ -10,7 +10,7 @@
         },
         "HostedZone": {
             "Type": "String",
-            "Description": "Enter the FQDN of your Route53 Hosted Zone"
+            "Description": "Enter the FQDN of your Route53 Hosted Zone (e.g. example.com.; note trailing dot)"
         },
         "InstanceType": {
             "Type": "String",
@@ -66,7 +66,7 @@
         "UCPSAN": {
             "Type": "String",
             "Default": "localhost",
-            "Description": " Additional Subject Alternative Names for certs (e.g. --san foo1.bar.com --san foo2.bar.com)"
+            "Description": "FQDN including subdomain for UCP (e.g. ucp.example.com)"
         }
     },
     "Mappings": {
@@ -515,7 +515,7 @@
             "Properties": {
                 "AllocationId": {
                     "Fn::GetAtt": [
-                        "EIP",
+                        "EIP1",
                         "AllocationId"
                     ]
                 },
@@ -524,7 +524,7 @@
                 }
             }
         },
-        "EIP": {
+        "EIP1": {
             "Type": "AWS::EC2::EIP",
             "Properties": {
                 "Domain": "vpc"
@@ -567,13 +567,19 @@
             "Properties": {
                 "AllocationId": {
                     "Fn::GetAtt": [
-                        "EIP",
+                        "EIP2",
                         "AllocationId"
                     ]
                 },
                 "SubnetId": {
                     "Ref": "PrivateSubnetAz2"
                 }
+            }
+        },
+        "EIP2": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc"
             }
         },
         "NatAZ2Route": {
@@ -627,33 +633,19 @@
         "ELBAlias": {
             "Type": "AWS::Route53::RecordSetGroup",
             "Properties": {
-                "HostedZoneName":
-                    {
-                        "Fn::Join": [
-                            "",
-                            [
-                                "ucp.",
-                                {
-                                    "Ref": "HostedZone"
-                                }
-                            ]
-                        ]
-                    },
+                "HostedZoneName": { "Ref": "HostedZone" },
                 "Comment": "Alias targeted Controller ELB.",
                 "RecordSets": [
                     {
                         "Name": {
-                            "Ref": "HostedZone"
+                            "Ref": "UCPSAN"
                         },
                         "Type": "A",
-                        "AliasTarget": {
-                            "HostedZoneId": {
-                                "Fn::GetAtt": [
-                                    "ControllerElasticLoadBalancer",
-                                    "CanonicalHostedZoneNameID"
-                                ]
-                            }
-                        }
+                        "AliasTarget" : {
+				"HostedZoneId" : { "Fn::GetAtt" : ["ControllerElasticLoadBalancer", "CanonicalHostedZoneNameID"] },
+      			"DNSName" : { "Fn::GetAtt" : ["ControllerElasticLoadBalancer","DNSName"] }
+				}
+
                     }
                 ]
             }
