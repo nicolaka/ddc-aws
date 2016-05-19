@@ -10,7 +10,12 @@
         },
         "HostedZone": {
             "Type": "String",
-            "Description": "Enter the FQDN of your Route53 Hosted Zone (e.g. example.com.; note trailing dot)"
+            "Description": "Enter the Route53 HostedZone ID to use. (e.g. Z2FDTNDATAQYW2)"
+        },
+        "UCPFQDN": {
+            "Type": "String",
+            "Default": "localhost",
+            "Description": "FQDN, including subdomain, for UCP (e.g. ucp.example.com. - note trailing dot)"
         },
         "InstanceType": {
             "Type": "String",
@@ -62,11 +67,6 @@
         "License": {
             "Type": "String",
             "Description": "License"
-        },
-        "UCPSAN": {
-            "Type": "String",
-            "Default": "localhost",
-            "Description": "FQDN including subdomain for UCP (e.g. ucp.example.com)"
         }
     },
     "Mappings": {
@@ -633,12 +633,12 @@
         "ELBAlias": {
             "Type": "AWS::Route53::RecordSetGroup",
             "Properties": {
-                "HostedZoneName": { "Ref": "HostedZone" },
+                "HostedZoneId": { "Ref": "HostedZone" },
                 "Comment": "Alias targeted Controller ELB.",
                 "RecordSets": [
                     {
                         "Name": {
-                            "Ref": "UCPSAN"
+                            "Ref": "UCPFQDN"
                         },
                         "Type": "A",
                         "AliasTarget" : {
@@ -661,7 +661,7 @@
                 "Handle": {
                     "Ref": "WaitHandle01"
                 },
-                "Timeout": "600"
+                "Timeout": "9000"
             }
         },
         "Controller": {
@@ -707,7 +707,7 @@
                         "DeleteOnTermination": "true",
                         "DeviceIndex": "0",
                         "SubnetId": {
-                            "Ref": "PrivateSubnetAz1"
+                            "Ref": "PubSubnetAz1"
                         },
                         "GroupSet": [
                             {
@@ -734,8 +734,8 @@
                                     "Fn::Join": [
                                         "",
                                         [
-                                            "#!/bin/bash\n",
-                                            "export UCP_URL=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
+                                            "#!/bin/bash -ex\n",
+                                            "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
                                             "sudo hostname ucp-controller-01\n",
                                             "wget -qO- https://get.docker.com/ | sh \n",
                                             "sudo usermod -aG docker ubuntu \n",
@@ -746,20 +746,20 @@
                                             "' >> /home/ubuntu/docker_subscription.lic \n",
                                             "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:latest install -D --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
                                             {
-                                                "Ref": "UCPSAN"
+                                                "Ref": "UCPFQDN"
                                             },
                                             "\n",
                                             "# Wait Handle: Controller tests itself to ensure it's responding before signaling CFN. Try in an infinite loop. Wait Handle will tear down stack if timeout exceeded\n",
                                             "# Defining function:\n",
                                             "checkcontroller()\n",
                                             "{\n",
-                                            "if [[ $(curl --insecure --silent --output /dev/null --write-out '%{http_code}' $UCP_URL/_ping) -eq 200 ]]\n",
+                                            "if [[ $(curl --insecure --silent --output /dev/null --write-out '%{http_code}' https://$PRIVATE_IP/_ping) -eq 200 ]]\n",
                                             "then /usr/local/bin/cfn-signal -s true '",
                                             {
                                                 "Ref": "WaitHandle01"
                                             },
                                             "'\n",
-                                            "else sleep 3 && echo \"checking again until I timeout..\" && checkcontroller\n",
+                                            "else sleep 3 && echo \"checking Controller until CFN times out..\" && checkcontroller\n",
                                             "fi\n",
                                             "}\n",
                                             "# Calling function:\n",
@@ -851,7 +851,7 @@
                     }
                 ],
                 "HealthCheck": {
-                    "Target": "TCP:80",
+                    "Target": "TCP:443",
                     "HealthyThreshold": "2",
                     "UnhealthyThreshold": "10",
                     "Interval": "30",
@@ -865,7 +865,7 @@
             }
         },
         "UCPNodeAsg": {
-            "DependsOn": "Controller",
+            "DependsOn": "WaitHandle01",
             "Type": "AWS::AutoScaling::AutoScalingGroup",
             "Properties": {
                 "VPCZoneIdentifier": [
@@ -914,7 +914,7 @@
             }
         },
         "UCPNode": {
-            "DependsOn": "Controller",
+            "DependsOn": "WaitHandle01",
             "Type": "AWS::AutoScaling::LaunchConfiguration",
             "Properties": {
                 "InstanceType": {
@@ -982,7 +982,7 @@
             }
         },
         "ControllerReplicaAsg": {
-            "DependsOn": "Controller",
+            "DependsOn": "WaitHandle01",
             "Type": "AWS::AutoScaling::AutoScalingGroup",
             "Properties": {
                 "VPCZoneIdentifier": [
@@ -1029,7 +1029,7 @@
             }
         },
         "ControllerReplica": {
-            "DependsOn": "Controller",
+            "DependsOn": "WaitHandle01",
             "Type": "AWS::AutoScaling::LaunchConfiguration",
             "Properties": {
                 "InstanceType": {
@@ -1082,7 +1082,7 @@
                                 "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
                                 "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp join  --replica  --url $UCP_URL --fingerprint $UCP_FINGERPRINT -D --san ",
                                 {
-                                    "Ref": "UCPSAN"
+                                    "Ref": "UCPFQDN"
                                 },
                                 "\n"
                             ]
