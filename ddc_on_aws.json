@@ -15,12 +15,12 @@
         "UCPFQDN": {
             "Type": "String",
             "Default": "localhost",
-            "Description": "FQDN, including subdomain, for UCP (e.g. ucp.example.com. - note trailing dot)"
+            "Description": "FQDN, including subdomain, for UCP (e.g. ucp.example.com)"
         },
         "DTRFQDN": {
             "Type": "String",
             "Default": "localhost",
-            "Description": "FQDN, including subdomain, for DTR (e.g. dtr.example.com. - note trailing dot)"
+            "Description": "FQDN, including subdomain, for DTR (e.g. dtr.example.com)"
         },
         "InstanceType": {
             "Type": "String",
@@ -71,7 +71,7 @@
         },
         "License": {
             "Type": "String",
-            "Description": "License"
+            "Description": "License in JSON format"
         }
     },
     "Mappings": {
