@@ -15,7 +15,7 @@
         "UCPFQDN": {
             "Type": "String",
             "Default": "localhost",
-            "Description": "FQDN, including subdomain, for UCP (e.g. ucp.example.com. - note trailing dot)"
+            "Description": "FQDN, including subdomain, for UCP (e.g. ucp.example.com). Must be subdomain of above R53 HostedZOne"
         },
         "InstanceType": {
             "Type": "String",
@@ -633,7 +633,9 @@
         "ELBAlias": {
             "Type": "AWS::Route53::RecordSetGroup",
             "Properties": {
-                "HostedZoneId": { "Ref": "HostedZone" },
+                "HostedZoneId": {
+                    "Ref": "HostedZone"
+                },
                 "Comment": "Alias targeted Controller ELB.",
                 "RecordSets": [
                     {
@@ -641,11 +643,20 @@
                             "Ref": "UCPFQDN"
                         },
                         "Type": "A",
-                        "AliasTarget" : {
-				"HostedZoneId" : { "Fn::GetAtt" : ["ControllerElasticLoadBalancer", "CanonicalHostedZoneNameID"] },
-      			"DNSName" : { "Fn::GetAtt" : ["ControllerElasticLoadBalancer","DNSName"] }
-				}
-
+                        "AliasTarget": {
+                            "HostedZoneId": {
+                                "Fn::GetAtt": [
+                                    "ControllerElasticLoadBalancer",
+                                    "CanonicalHostedZoneNameID"
+                                ]
+                            },
+                            "DNSName": {
+                                "Fn::GetAtt": [
+                                    "ControllerElasticLoadBalancer",
+                                    "DNSName"
+                                ]
+                            }
+                        }
                     }
                 ]
             }
@@ -707,7 +718,7 @@
                         "DeleteOnTermination": "true",
                         "DeviceIndex": "0",
                         "SubnetId": {
-                            "Ref": "PubSubnetAz1"
+                            "Ref": "PrivateSubnetAz1"
                         },
                         "GroupSet": [
                             {
@@ -784,6 +795,41 @@
                                     "Controller"
                                 ]
                             ]
+                        }
+                    }
+                ]
+            }
+        },
+        "ControllerRecoveryAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "EC2 Autorecovery for UCP Controller. Autorecover if it fails EC2 status checks for 15 minutes or more.",
+                "Namespace": "AWS/EC2",
+                "MetricName": "StatusCheckFailed_System",
+                "Statistic": "Minimum",
+                "Period": "60",
+                "EvaluationPeriods": "15",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "Threshold": "0",
+                "AlarmActions": [
+                    {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:automate:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":ec2:recover"
+                            ]
+                        ]
+                    }
+                ],
+                "Dimensions": [
+                    {
+                        "Name": "InstanceId",
+                        "Value": {
+                            "Ref": "Controller"
                         }
                     }
                 ]
@@ -891,9 +937,11 @@
                 "DesiredCapacity": {
                     "Ref": "ClusterSize"
                 },
-                "LoadBalancerNames": [{
-                    "Ref": "UCPNodeElasticLoadBalancer"
-                }],
+                "LoadBalancerNames": [
+                    {
+                        "Ref": "UCPNodeElasticLoadBalancer"
+                    }
+                ],
                 "Tags": [
                     {
                         "Key": "Name",
@@ -1006,9 +1054,11 @@
                 "MinSize": "2",
                 "MaxSize": "2",
                 "DesiredCapacity": "2",
-                "LoadBalancerNames": [{
-                    "Ref": "ControllerElasticLoadBalancer"
-                }],
+                "LoadBalancerNames": [
+                    {
+                        "Ref": "ControllerElasticLoadBalancer"
+                    }
+                ],
                 "Tags": [
                     {
                         "Key": "Name",
@@ -1096,10 +1146,16 @@
         "UCPLoginPage": {
             "Description": "UCP Console URL",
             "Value": {
-                "Fn::Join": ["", [ "https://", { "Ref" : "UCPFQDN" }
+                "Fn::Join": [
+                    "",
+                    [
+                        "https://",
+                        {
+                            "Ref": "UCPFQDN"
+                        }
+                    ]
                 ]
-            ]
-          }
+            }
         }
     }
 }
