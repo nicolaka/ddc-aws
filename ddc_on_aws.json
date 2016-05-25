@@ -15,7 +15,7 @@
         "UCPFQDN": {
             "Type": "String",
             "Default": "localhost",
-            "Description": "FQDN, including subdomain, for UCP (e.g. ucp.example.com). Must be subdomain of above R53 HostedZOne"
+            "Description": "FQDN, including subdomain, for UCP (e.g. ucp.example.com). Must be subdomain of above R53 HostedZone"
         },
         "InstanceType": {
             "Type": "String",
@@ -803,7 +803,7 @@
         "ControllerRecoveryAlarm": {
             "Type": "AWS::CloudWatch::Alarm",
             "Properties": {
-                "AlarmDescription": "EC2 Autorecovery for UCP Controller. Autorecover if it fails EC2 status checks for 15 minutes or more.",
+                "AlarmDescription": "EC2 Autorecovery for UCP Controller. Autorecover if we fail EC2 status checks for 15 minutes.",
                 "Namespace": "AWS/EC2",
                 "MetricName": "StatusCheckFailed_System",
                 "Statistic": "Minimum",
