@@ -88,22 +88,8 @@ sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSW
    
 ```
 
-**TODOs**:
 
-P0:
-- Nico: Version UCP : hardcode UCP version for compatibility
-- Brandon: Remove Hosted Zone config. Add Public Hosted Zone Paramter and use the UCP+DTR SAN paramters to create the  A record for the ELBs. 
-- Brandon: Reconfig VPC to have 2 Az, 4 subnets, 2 private, 2 public. Also create NAT GW for Private Subnets.
-- Brandon Create 2 Elbs. One for UCP and one for DTR. Listeners should be for TCP 443. Healthchecks also for TCP port 443. Add the three UCP controllers to the elb.
-- Brandon: Implement weight handler. Create ASG for the replica controllers. 
 
-P1:
-
-- Single ASG for Controllers
-- Root CA backup > S3
-- DTR 2.0 Installation
-- DynamoDB cluster Identitiy
-- Cloudwatch integration for autoscaling.
 
 
 
