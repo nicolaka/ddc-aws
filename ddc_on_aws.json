@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "Docker Datacenter Quickstart for AWS",
+    "Description": "Docker Datacenter Quickstart for AWS, Version 0.1, May 2016",
     "Parameters": {
         "KeyName": {
             "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instances",
@@ -15,12 +15,12 @@
         "UCPFQDN": {
             "Type": "String",
             "Default": "localhost",
-            "Description": "FQDN, including subdomain, for UCP (e.g. ucp.example.com)"
+            "Description": "FQDN, including subdomain, for UCP (e.g. ucp.example.com). Must be subdomain of selected Route53 HostedZone"
         },
         "DTRFQDN": {
             "Type": "String",
             "Default": "localhost",
-            "Description": "FQDN, including subdomain, for DTR (e.g. dtr.example.com)"
+            "Description": "FQDN, including subdomain, for DTR (e.g. dtr.example.com). Must be subdomain of selected Route53 HostedZone"
         },
         "InstanceType": {
             "Type": "String",
@@ -841,37 +841,37 @@
                 ]
             }
         },
-        "UCPNodeElasticLoadBalancer": {
-            "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+        "ControllerRecoveryAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
             "Properties": {
-                "Subnets": [
+                "AlarmDescription": "EC2 Autorecovery for UCP Controller. Autorecover if we fail EC2 status checks for 15 minutes.",
+                "Namespace": "AWS/EC2",
+                "MetricName": "StatusCheckFailed_System",
+                "Statistic": "Minimum",
+                "Period": "60",
+                "EvaluationPeriods": "15",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "Threshold": "0",
+                "AlarmActions": [
                     {
-                        "Ref": "PubSubnetAz1"
-                    },
-                    {
-                        "Ref": "PubSubnetAz2"
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:automate:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":ec2:recover"
+                            ]
+                        ]
                     }
                 ],
-                "ConnectionSettings": {
-                    "IdleTimeout": 30
-                },
-                "Listeners": [
+                "Dimensions": [
                     {
-                        "LoadBalancerPort": "80",
-                        "InstancePort": "80",
-                        "Protocol": "HTTP"
-                    }
-                ],
-                "HealthCheck": {
-                    "Target": "TCP:443",
-                    "HealthyThreshold": "2",
-                    "UnhealthyThreshold": "10",
-                    "Interval": "30",
-                    "Timeout": "5"
-                },
-                "SecurityGroups": [
-                    {
-                        "Ref": "WideOpenVpcSG"
+                        "Name": "InstanceId",
+                        "Value": {
+                            "Ref": "Controller"
+                        }
                     }
                 ]
             }
@@ -943,9 +943,7 @@
                 "DesiredCapacity": {
                     "Ref": "ClusterSize"
                 },
-                "LoadBalancerNames": [{
-                    "Ref": "UCPNodeElasticLoadBalancer"
-                }],
+
                 "Tags": [
                     {
                         "Key": "Name",
@@ -1280,7 +1278,7 @@
             "Properties": {
                 "AvailabilityZone": {
                     "Fn::Select": [
-                        "0",
+                        "1",
                         {
                             "Fn::GetAZs": {
                                 "Ref": "AWS::Region"
@@ -1317,7 +1315,7 @@
                         "DeleteOnTermination": "true",
                         "DeviceIndex": "0",
                         "SubnetId": {
-                            "Ref": "PubSubnetAz1"
+                            "Ref": "PubSubnetAz2"
                         },
                         "GroupSet": [
                             {
@@ -1579,13 +1577,51 @@
                     }
                 ]
             }
+        },
+        "DTRreplica01RecoveryAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "EC2 Autorecovery for DTR Replica. Autorecover if we fail EC2 status checks for 15 minutes.",
+                "Namespace": "AWS/EC2",
+                "MetricName": "StatusCheckFailed_System",
+                "Statistic": "Minimum",
+                "Period": "60",
+                "EvaluationPeriods": "15",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "Threshold": "0",
+                "AlarmActions": [
+                    {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:automate:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":ec2:recover"
+                            ]
+                        ]
+                    }
+                ],
+                "Dimensions": [
+                    {
+                        "Name": "InstanceId",
+                        "Value": {
+                            "Ref": "DTRreplica01"
+                        }
+                    }
+                ]
+            }
         }
     },
     "Outputs": {
         "UCPLoginPage": {
             "Description": "UCP Console URL",
             "Value": {
-                "Fn::Join": ["", [ "https://", { "Ref" : "UCPFQDN" }
+                "Fn::Join": ["", [ "https://",
+                 { 
+                    "Ref" : "UCPFQDN" 
+                 }
                 ]
             ]
           }
@@ -1593,7 +1629,10 @@
         "DTRLoginPage": {
             "Description": "DTR Console URL",
             "Value": {
-                "Fn::Join": ["", [ "https://", { "Ref" : "DTRFQDN" }
+                "Fn::Join": ["", [ "https://",
+                 { 
+                    "Ref" : "DTRFQDN" 
+                 }
                 ]
             ]
           }
