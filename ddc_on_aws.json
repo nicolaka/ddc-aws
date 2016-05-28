@@ -6,7 +6,7 @@
             "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instances",
             "Type": "AWS::EC2::KeyPair::KeyName",
             "Default": "id_rsa_aws",
-            "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+            "ConstraintDescription": "Must be the name of an existing EC2 KeyPair."
         },
         "HostedZone": {
             "Type": "String",
@@ -74,6 +74,24 @@
             "Description": "License in JSON format"
         }
     },
+    "Metadata" : {
+  "AWS::CloudFormation::Interface" : {
+    "ParameterGroups" : [
+      {
+        "Label" : { "default" : "DNS Configuration" },
+        "Parameters" : [ "HostedZone", "DTRFQDN", "UCPFQDN" ]
+      },
+      {
+        "Label" : { "default": "Cluster Configuration" },
+        "Parameters" : [ "ClusterSize", "InstanceType", "KeyName" ]
+      },
+      {
+        "Label" : { "default": "Docker Datacenter License" },
+        "Parameters" : [ "License" ]
+      }
+    ]
+  }
+},
     "Mappings": {
         "VpcCidrs": {
             "vpc": {
@@ -1272,6 +1290,43 @@
                 ]
             }
         },
+      "DTRReplicaRole": {
+         "Type": "AWS::IAM::Role",
+         "Properties": {
+            "AssumeRolePolicyDocument": {
+               "Version" : "2012-10-17",
+               "Statement": [ {
+                  "Effect": "Allow",
+                  "Principal": {
+                     "Service": [ "ec2.amazonaws.com" ]
+                  },
+                  "Action": [ "sts:AssumeRole" ]
+               } ]
+            },
+            "Path": "/",
+            "Policies": [ {
+               "PolicyName": "root",
+               "PolicyDocument": {
+                  "Version" : "2012-10-17",
+                  "Statement": [ {
+                     "Effect": "Allow",
+                     "Action": "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                     "Resource": "*"
+                  } ]
+               }
+               } ]
+            }
+      },
+      "DTRReplicaProfile": {
+         "Type": "AWS::IAM::InstanceProfile",
+         "Properties": {
+            "Path": "/",
+            "Roles": [ {
+               "Ref": "DTRReplicaRole"
+            } ]
+         }
+      },
+
         "DTRreplica02": {
             "DependsOn": "WaitCondition02",
             "Type": "AWS::EC2::Instance",
@@ -1334,12 +1389,16 @@
                                 "sudo hostname dtr-replica-02\n",
                                 "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
-                                "apt-get -y install python-pip",
+                                "apt-get -y install python-pip unzip",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
                                 "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup",
                                 "chmod +x /etc/init.d/cfn-hup",
                                 "update-rc.d cfn-hup defaults",
                                 "service cfn-hup start",
+                                "#Install AWS CLI",
+                                "curl \"https://s3.amazonaws.com/aws-cli/awscli-bundle.zip\" -o \"awscli-bundle.zip\"",
+                                "unzip awscli-bundle.zip",
+                                "./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws",
 
                                 {
                                     "Fn::Join": [
@@ -1386,7 +1445,15 @@
                                             "fi\n",
                                             "}\n",
                                             "# Calling function:\n",
-                                            "checkcontroller\n"
+                                            "checkcontroller\n",
+                                            "#Register instance with ELB\n",
+                                            "INSTANCE=\"$(curl 169.254.169.254/latest/meta-data/instance-id)\"\n",
+                                            "aws elb register-instances-with-load-balancer --load-balancer-name ",
+                                            { "Ref": "DTRElasticLoadBalancer" },
+                                             " --instances $INSTANCE",
+                                             " --region ", {
+                                          "Ref": "AWS::Region"
+                                          }
                                         ]
                                     ]
                                 }
@@ -1394,6 +1461,7 @@
                         ]
                     }
                 },
+                "IamInstanceProfile": {"Ref": "DTRReplicaProfile"},
                 "Tags": [
                     {
                         "Key": "Name",
@@ -1480,6 +1548,10 @@
                                 "chmod +x /etc/init.d/cfn-hup",
                                 "update-rc.d cfn-hup defaults",
                                 "service cfn-hup start",
+                                "#Install AWS CLI",
+                                "curl \"https://s3.amazonaws.com/aws-cli/awscli-bundle.zip\" -o \"awscli-bundle.zip\"",
+                                "unzip awscli-bundle.zip",
+                                "./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws",
 
                                 {
                                     "Fn::Join": [
@@ -1511,7 +1583,15 @@
                                             "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.0 join --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
                                             "# Installing DTR Replica\n",
                                             "sleep 30 \n",
-                                            "sudo -E docker run --rm -i docker/dtr:2.0.0 join --ucp-url https://$UCPFQDN --ucp-node dtr-replica-03 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000003 --existing-replica-id 000000000001 \n"
+                                            "sudo -E docker run --rm -i docker/dtr:2.0.0 join --ucp-url https://$UCPFQDN --ucp-node dtr-replica-03 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000003 --existing-replica-id 000000000001 \n",
+                                            "#Register instance with ELB\n",
+                                            "INSTANCE=\"$(curl 169.254.169.254/latest/meta-data/instance-id)\"\n",
+                                            "aws elb register-instances-with-load-balancer --load-balancer-name ",
+                                             { "Ref": "DTRElasticLoadBalancer" },
+                                             " --instances $INSTANCE",
+                                             " --region ", {
+                                          "Ref": "AWS::Region"
+                                          }
                                         ]
                                     ]
                                 }
@@ -1519,6 +1599,7 @@
                         ]
                     }
                 },
+                "IamInstanceProfile": {"Ref": "DTRReplicaProfile"},
                 "Tags": [
                     {
                         "Key": "Name",
@@ -1619,8 +1700,8 @@
             "Description": "UCP Console URL",
             "Value": {
                 "Fn::Join": ["", [ "https://",
-                 { 
-                    "Ref" : "UCPFQDN" 
+                 {
+                    "Ref" : "UCPFQDN"
                  }
                 ]
             ]
@@ -1630,8 +1711,8 @@
             "Description": "DTR Console URL",
             "Value": {
                 "Fn::Join": ["", [ "https://",
-                 { 
-                    "Ref" : "DTRFQDN" 
+                 {
+                    "Ref" : "DTRFQDN"
                  }
                 ]
             ]
