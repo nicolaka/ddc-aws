@@ -1542,7 +1542,7 @@
                                 "sudo hostname dtr-replica-03\n",
                                 "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
-                                "apt-get -y install python-pip",
+                                "apt-get -y install python-pip unzip",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
                                 "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup",
                                 "chmod +x /etc/init.d/cfn-hup",
