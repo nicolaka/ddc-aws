@@ -14,6 +14,15 @@ Requirements:
 *  3.16+ Kernel
 *  3.5 G Minimum RAM
 
+**How to Use:**
+
+- Go to your AWS portal + select Cloudformation service
+- Click on "Create a Stack"
+- Choose "Choose a Template to Upload to S3" and load the ddc_on_aws.json file.
+- Fill in the DNS, Cluster, and License configuration.
+- Launch the Stack and give it anywhere between 20-40 mins ( yes it takes a long time )
+- Once all done, click on outputs tab to see the URLs of UCP and DTR.
+
 **Setup:**
 
 * Single VPC in Single Region
