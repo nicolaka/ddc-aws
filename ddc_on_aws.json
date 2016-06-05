@@ -22,10 +22,86 @@
             "Default": "localhost",
             "Description": "FQDN, including subdomain, for DTR (e.g. dtr.example.com). Must be subdomain of selected Route53 HostedZone"
         },
-        "InstanceType": {
+        "UCPControllersInstanceType": {
             "Type": "String",
-            "Description": "EC2 HVM instance type for all the instances created (minimum is m3.medium).",
+            "Description": "EC2 HVM instance type for UCP Controllers only (minimum is m3.medium).",
             "AllowedValues": [
+                "m4.large",
+                "m4.xlarge",
+                "m4.2xlarge",
+                "m4.4xlarge",
+                "m4.10xlarge",
+                "m3.medium",
+                "m3.large",
+                "m3.xlarge",
+                "m3.2xlarge",
+                "c4.large",
+                "c4.xlarge",
+                "c4.2xlarge",
+                "c4.4xlarge",
+                "c4.8xlarge",
+                "c3.large",
+                "c3.xlarge",
+                "c3.2xlarge",
+                "c3.4xlarge",
+                "c3.8xlarge",
+                "r3.large",
+                "r3.xlarge",
+                "r3.2xlarge",
+                "r3.4xlarge",
+                "r3.8xlarge",
+                "i2.xlarge",
+                "i2.2xlarge",
+                "i2.4xlarge",
+                "i2.8xlarge"
+            ],
+            "ConstraintDescription": "Must be a valid EC2 HVM instance type.",
+            "Default": "m3.medium"
+        },
+        "DTRInstanceType": {
+            "Type": "String",
+            "Description": "EC2 HVM instance type for DTR Replicas only (minimum is m3.medium).",
+            "AllowedValues": [
+                "m4.large",
+                "m4.xlarge",
+                "m4.2xlarge",
+                "m4.4xlarge",
+                "m4.10xlarge",
+                "m3.medium",
+                "m3.large",
+                "m3.xlarge",
+                "m3.2xlarge",
+                "c4.large",
+                "c4.xlarge",
+                "c4.2xlarge",
+                "c4.4xlarge",
+                "c4.8xlarge",
+                "c3.large",
+                "c3.xlarge",
+                "c3.2xlarge",
+                "c3.4xlarge",
+                "c3.8xlarge",
+                "r3.large",
+                "r3.xlarge",
+                "r3.2xlarge",
+                "r3.4xlarge",
+                "r3.8xlarge",
+                "i2.xlarge",
+                "i2.2xlarge",
+                "i2.4xlarge",
+                "i2.8xlarge"
+            ],
+            "ConstraintDescription": "Must be a valid EC2 HVM instance type.",
+            "Default": "m3.medium"
+        },
+        "UCPNodesInstanceType": {
+            "Type": "String",
+            "Description": "EC2 HVM instance type for UCP Nodes only (minimum is m3.medium).",
+            "AllowedValues": [
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "t2.large",
                 "m4.large",
                 "m4.xlarge",
                 "m4.2xlarge",
@@ -78,8 +154,8 @@
         "Parameters" : [ "HostedZone", "DTRFQDN", "UCPFQDN" ]
       },
       {
-        "Label" : { "default": "UCP Cluster Configuration" },
-        "Parameters" : [ "ClusterSize", "InstanceType", "KeyName" ]
+        "Label" : { "default": "Cluster Configuration" },
+        "Parameters" : [ "ClusterSize", "UCPControllersInstanceType","DTRInstanceType","UCPNodesInstanceType", "KeyName" ]
       },
       {
         "Label" : { "default": "Docker Datacenter License" },
@@ -746,7 +822,7 @@
                     ]
                 },
                 "InstanceType": {
-                    "Ref": "InstanceType"
+                    "Ref": "UCPControllersInstanceType"
                 },
                 "KeyName": {
                     "Ref": "KeyName"
@@ -761,7 +837,7 @@
                             "Fn::FindInMap": [
                                 "AWSInstanceType2Arch",
                                 {
-                                    "Ref": "InstanceType"
+                                    "Ref": "UCPControllersInstanceType"
                                 },
                                 "Arch"
                             ]
@@ -774,7 +850,7 @@
                         "DeleteOnTermination": "true",
                         "DeviceIndex": "0",
                         "SubnetId": {
-                            "Ref": "PubSubnetAz1"
+                            "Ref": "PrivateSubnetAz1"
                         },
                         "GroupSet": [
                             {
@@ -986,7 +1062,7 @@
             "Type": "AWS::AutoScaling::LaunchConfiguration",
             "Properties": {
                 "InstanceType": {
-                    "Ref": "InstanceType"
+                    "Ref": "UCPNodesInstanceType"
                 },
                 "KeyName": {
                     "Ref": "KeyName"
@@ -1001,7 +1077,7 @@
                             "Fn::FindInMap": [
                                 "AWSInstanceType2Arch",
                                 {
-                                    "Ref": "InstanceType"
+                                    "Ref": "UCPNodesInstanceType"
                                 },
                                 "Arch"
                             ]
@@ -1093,7 +1169,7 @@
             "Type": "AWS::AutoScaling::LaunchConfiguration",
             "Properties": {
                 "InstanceType": {
-                    "Ref": "InstanceType"
+                    "Ref": "UCPControllersInstanceType"
                 },
                 "KeyName": {
                     "Ref": "KeyName"
@@ -1108,7 +1184,7 @@
                             "Fn::FindInMap": [
                                 "AWSInstanceType2Arch",
                                 {
-                                    "Ref": "InstanceType"
+                                    "Ref": "UCPControllersInstanceType"
                                 },
                                 "Arch"
                             ]
@@ -1170,7 +1246,7 @@
                     ]
                 },
                 "InstanceType": {
-                    "Ref": "InstanceType"
+                    "Ref": "DTRInstanceType"
                 },
                 "KeyName": {
                     "Ref": "KeyName"
@@ -1185,7 +1261,7 @@
                             "Fn::FindInMap": [
                                 "AWSInstanceType2Arch",
                                 {
-                                    "Ref": "InstanceType"
+                                    "Ref": "DTRInstanceType"
                                 },
                                 "Arch"
                             ]
@@ -1198,7 +1274,7 @@
                         "DeleteOnTermination": "true",
                         "DeviceIndex": "0",
                         "SubnetId": {
-                            "Ref": "PubSubnetAz1"
+                            "Ref": "PrivateSubnetAz1"
                         },
                         "GroupSet": [
                             {
@@ -1351,7 +1427,7 @@
                     ]
                 },
                 "InstanceType": {
-                    "Ref": "InstanceType"
+                    "Ref": "DTRInstanceType"
                 },
                 "KeyName": {
                     "Ref": "KeyName"
@@ -1366,7 +1442,7 @@
                             "Fn::FindInMap": [
                                 "AWSInstanceType2Arch",
                                 {
-                                    "Ref": "InstanceType"
+                                    "Ref": "DTRInstanceType"
                                 },
                                 "Arch"
                             ]
@@ -1379,7 +1455,7 @@
                         "DeleteOnTermination": "true",
                         "DeviceIndex": "0",
                         "SubnetId": {
-                            "Ref": "PubSubnetAz2"
+                            "Ref": "PrivateSubnetAz2"
                         },
                         "GroupSet": [
                             {
@@ -1508,7 +1584,7 @@
                     ]
                 },
                 "InstanceType": {
-                    "Ref": "InstanceType"
+                    "Ref": "DTRInstanceType"
                 },
                 "KeyName": {
                     "Ref": "KeyName"
@@ -1523,7 +1599,7 @@
                             "Fn::FindInMap": [
                                 "AWSInstanceType2Arch",
                                 {
-                                    "Ref": "InstanceType"
+                                    "Ref": "DTRInstanceType"
                                 },
                                 "Arch"
                             ]
@@ -1536,7 +1612,7 @@
                         "DeleteOnTermination": "true",
                         "DeviceIndex": "0",
                         "SubnetId": {
-                            "Ref": "PubSubnetAz1"
+                            "Ref": "PrivateSubnetAz1"
                         },
                         "GroupSet": [
                             {
