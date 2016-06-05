@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "Docker Datacenter Quickstart for AWS, Version 0.1, May 2016",
+    "Description": "Docker Datacenter Quickstart for AWS, Version 1.0, June 2016",
     "Parameters": {
         "KeyName": {
             "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instances",
@@ -24,12 +24,8 @@
         },
         "InstanceType": {
             "Type": "String",
-            "Description": "EC2 HVM instance type (t2.micro, m3.medium, etc).",
+            "Description": "EC2 HVM instance type for all the instances created (minimum is m3.medium).",
             "AllowedValues": [
-                "t2.micro",
-                "t2.small",
-                "t2.medium",
-                "t2.large",
                 "m4.large",
                 "m4.xlarge",
                 "m4.2xlarge",
@@ -60,29 +56,29 @@
                 "i2.8xlarge"
             ],
             "ConstraintDescription": "Must be a valid EC2 HVM instance type.",
-            "Default": "t2.micro"
+            "Default": "m3.medium"
         },
         "ClusterSize": {
             "Type": "Number",
             "Default": "3",
             "MinValue": "3",
             "MaxValue": "12",
-            "Description": "Number of nodes in the UCP cluster (3-12)."
+            "Description": "Number of UCP nodes (non-controller) in the cluster (3-12)."
         },
         "License": {
             "Type": "String",
-            "Description": "License in JSON format"
+            "Description": "Docker Datacenter License in JSON format. Get Trial License here : https://hub.docker.com/enterprise/trial/ "
         }
     },
     "Metadata" : {
   "AWS::CloudFormation::Interface" : {
     "ParameterGroups" : [
       {
-        "Label" : { "default" : "DNS Configuration" },
+        "Label" : { "default" : "UCP and DTR DNS Configuration" },
         "Parameters" : [ "HostedZone", "DTRFQDN", "UCPFQDN" ]
       },
       {
-        "Label" : { "default": "Cluster Configuration" },
+        "Label" : { "default": "UCP Cluster Configuration" },
         "Parameters" : [ "ClusterSize", "InstanceType", "KeyName" ]
       },
       {
@@ -778,7 +774,7 @@
                         "DeleteOnTermination": "true",
                         "DeviceIndex": "0",
                         "SubnetId": {
-                            "Ref": "PrivateSubnetAz1"
+                            "Ref": "PubSubnetAz1"
                         },
                         "GroupSet": [
                             {
@@ -793,10 +789,14 @@
                             "\n",
                             [
                                 "#!/bin/bash -ex",
-                                "#Install CFN-helper package + Docker",
+                                "#Install Docker",
                                 "sudo hostname ucp-controller\n",
+                                "export HOSTNAME=ucp-controller \n",
+                                "sudo sed -i 's/localhost/ucp-controller/g' /etc/hosts \n",
+                                "echo $HOSTNAME | sudo tee  /etc/hostname \n",
                                 "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
+                                "#Install CFN-helper Package ",
                                 "apt-get -y install python-pip",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
                                 "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup",
@@ -814,7 +814,7 @@
                                                 "Ref": "License"
                                             },
                                             "' >> /home/ubuntu/docker_subscription.lic \n",
-                                            "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:1.1.0 install --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
+                                            "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:1.1.1 install --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
                                             {
                                                 "Ref": "UCPFQDN"
                                             },
@@ -911,7 +911,7 @@
                     }
                 ],
                 "ConnectionSettings": {
-                    "IdleTimeout": 30
+                    "IdleTimeout": 600
                 },
                 "Listeners": [
                     {
@@ -1020,6 +1020,7 @@
                             "",
                             [
                                 "#!/bin/bash\n",
+                                "# Installing Docker",
                                 "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
                                 "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
@@ -1033,7 +1034,7 @@
                                 "\n",
                                 "curl --insecure $UCP_URL/ca > ca.pem\n",
                                 "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
-                                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.0 join --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n"
+                                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.1 join --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n"
                             ]
                         ]
                     }
@@ -1125,7 +1126,11 @@
                             "",
                             [
                                 "#!/bin/bash\n",
+                                "#Install Docker",
                                 "sudo hostname ucp-controller-replica\n",
+                                "export HOSTNAME=ucp-controller-replica \n",
+                                "sudo sed -i 's/localhost/controller-replica/g' /etc/hosts \n",
+                                "echo $HOSTNAME | sudo tee  /etc/hostname \n",
                                 "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
                                 "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
@@ -1139,7 +1144,7 @@
                                 "\n",
                                 "curl --insecure $UCP_URL/ca > ca.pem\n",
                                 "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
-                                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.0 join  --replica  --url $UCP_URL --fingerprint $UCP_FINGERPRINT --san ",
+                                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.1 join  --replica  --url $UCP_URL --fingerprint $UCP_FINGERPRINT --san ",
                                 {
                                     "Ref": "UCPFQDN"
                                 },
@@ -1193,7 +1198,7 @@
                         "DeleteOnTermination": "true",
                         "DeviceIndex": "0",
                         "SubnetId": {
-                            "Ref": "PrivateSubnetAz1"
+                            "Ref": "PubSubnetAz1"
                         },
                         "GroupSet": [
                             {
@@ -1208,10 +1213,14 @@
                             "\n",
                             [
                                 "#!/bin/bash -ex",
-                                "#Install CFN-helper package + Docker",
+                                "#Install Docker",
                                 "sudo hostname dtr-replica-01\n",
+                                "export HOSTNAME=dtr-replica-01 \n",
+                                "sudo sed -i 's/localhost/dtr-replica-01/g' /etc/hosts \n",
+                                "echo $HOSTNAME | sudo tee  /etc/hostname \n",
                                 "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
+                                "#Install CFN-helper package ",
                                 "apt-get -y install python-pip",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
                                 "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup",
@@ -1246,10 +1255,10 @@
                                             "curl --insecure $UCP_URL/ca > ca.pem\n",
                                             "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
                                             "# Installing UCP Node\n",
-                                            "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.0 join --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
+                                            "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.1 join --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
                                             "# Installing DTR Replica\n",
-                                            "sleep 60 \n",
-                                            "sudo -E docker run --rm -i docker/dtr:2.0.0 install --ucp-url https://$UCPFQDN --ucp-node  dtr-replica-01 --dtr-load-balancer $DTRFQDN:443 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000001 \n",
+                                            "sleep 30 \n",
+                                            "sudo -E docker run --rm -i docker/dtr:2.0.1 install --ucp-url https://$UCPFQDN --ucp-node  dtr-replica-01 --dtr-external-url $DTRFQDN:443 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000001 \n",
                                             "# Wait Handle: DTR tests itself to ensure it's responding before signaling CFN. Try in an infinite loop. Wait Handle will tear down stack if timeout exceeded\n",
                                             "# Defining function:\n",
                                             "checkcontroller()\n",
@@ -1370,7 +1379,7 @@
                         "DeleteOnTermination": "true",
                         "DeviceIndex": "0",
                         "SubnetId": {
-                            "Ref": "PrivateSubnetAz2"
+                            "Ref": "PubSubnetAz2"
                         },
                         "GroupSet": [
                             {
@@ -1385,10 +1394,14 @@
                             "\n",
                             [
                                 "#!/bin/bash -ex",
-                                "#Install CFN-helper package + Docker",
+                                "#Install Docker",
                                 "sudo hostname dtr-replica-02\n",
+                                "export HOSTNAME=dtr-replica-02 \n",
+                                "sudo sed -i 's/localhost/dtr-replica-02/g' /etc/hosts \n",
+                                "echo $HOSTNAME | sudo tee  /etc/hostname \n",
                                 "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
+                                "#Install CFN-helper package ",
                                 "apt-get -y install python-pip unzip",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
                                 "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup",
@@ -1427,10 +1440,10 @@
                                             "curl --insecure $UCP_URL/ca > ca.pem\n",
                                             "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
                                             "# Installing UCP Node\n",
-                                            "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.0 join --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
+                                            "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.1 join --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
                                             "# Installing DTR Replica\n",
                                             "sleep 30 \n",
-                                            "sudo -E docker run --rm -i docker/dtr:2.0.0 join --ucp-url https://$UCPFQDN --ucp-node  dtr-replica-02 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000002 --existing-replica-id 000000000001 \n",
+                                            "sudo -E docker run --rm -i docker/dtr:2.0.1 join --ucp-url https://$UCPFQDN --ucp-node  dtr-replica-02 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000002 --existing-replica-id 000000000001 \n",
                                             "# Wait Handle: DTR tests itself to ensure it's responding before signaling CFN. Try in an infinite loop. Wait Handle will tear down stack if timeout exceeded\n",
                                             "# Defining function:\n",
                                             "checkcontroller()\n",
@@ -1523,7 +1536,7 @@
                         "DeleteOnTermination": "true",
                         "DeviceIndex": "0",
                         "SubnetId": {
-                            "Ref": "PrivateSubnetAz1"
+                            "Ref": "PubSubnetAz1"
                         },
                         "GroupSet": [
                             {
@@ -1538,10 +1551,14 @@
                             "\n",
                             [
                                 "#!/bin/bash -ex",
-                                "#Install CFN-helper package + Docker",
+                                "#Install Docker",
                                 "sudo hostname dtr-replica-03\n",
+                                "export HOSTNAME=dtr-replica-03 \n",
+                                "sudo sed -i 's/localhost/dtr-replica-03/g' /etc/hosts \n",
+                                "echo $HOSTNAME | sudo tee  /etc/hostname \n",
                                 "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
+                                "#Install CFN-helper package ",
                                 "apt-get -y install python-pip unzip",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
                                 "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup",
@@ -1580,10 +1597,10 @@
                                             "curl --insecure $UCP_URL/ca > ca.pem\n",
                                             "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
                                             "# Installing UCP Node\n",
-                                            "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.0 join --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
+                                            "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.1 join --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
                                             "# Installing DTR Replica\n",
                                             "sleep 30 \n",
-                                            "sudo -E docker run --rm -i docker/dtr:2.0.0 join --ucp-url https://$UCPFQDN --ucp-node dtr-replica-03 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000003 --existing-replica-id 000000000001 \n",
+                                            "sudo -E docker run --rm -i docker/dtr:2.0.1 join --ucp-url https://$UCPFQDN --ucp-node dtr-replica-03 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000003 --existing-replica-id 000000000001 \n",
                                             "#Register instance with ELB\n",
                                             "INSTANCE=\"$(curl 169.254.169.254/latest/meta-data/instance-id)\"\n",
                                             "aws elb register-instances-with-load-balancer --load-balancer-name ",
@@ -1636,7 +1653,7 @@
                     }
                 ],
                 "ConnectionSettings": {
-                    "IdleTimeout": 30
+                    "IdleTimeout": 600
                 },
                 "Listeners": [
                     {
@@ -1696,6 +1713,14 @@
         }
     },
     "Outputs": {
+        "Username":{
+            "Description": "Default UCP and DTR username",
+            "Value": "admin" 
+        },
+        "Password":{
+            "Description": "Default UCP and DTR password. Please Change it!",
+            "Value": "ddconaws" 
+        },
         "UCPLoginPage": {
             "Description": "UCP Console URL",
             "Value": {
