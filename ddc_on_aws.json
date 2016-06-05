@@ -96,7 +96,7 @@
         },
         "UCPNodesInstanceType": {
             "Type": "String",
-            "Description": "EC2 HVM instance type for UCP Nodes only (minimum is m3.medium).",
+            "Description": "EC2 HVM instance type for UCP Nodes only",
             "AllowedValues": [
                 "t2.micro",
                 "t2.small",
@@ -138,8 +138,8 @@
             "Type": "Number",
             "Default": "3",
             "MinValue": "3",
-            "MaxValue": "12",
-            "Description": "Number of UCP nodes (non-controller) in the cluster (3-12)."
+            "MaxValue": "64",
+            "Description": "Number of UCP nodes (non-controller) in the cluster (3-64)."
         },
         "License": {
             "Type": "String",
@@ -1033,7 +1033,7 @@
                     "Ref": "UCPNode"
                 },
                 "MinSize": "3",
-                "MaxSize": "12",
+                "MaxSize": "64",
                 "DesiredCapacity": {
                     "Ref": "ClusterSize"
                 },
