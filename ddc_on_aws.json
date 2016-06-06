@@ -138,8 +138,8 @@
             "Type": "Number",
             "Default": "3",
             "MinValue": "3",
-            "MaxValue": "64",
-            "Description": "Number of UCP nodes (non-controller) in the cluster (3-64)."
+            "MaxValue": "500",
+            "Description": "Number of UCP nodes (non-controller) in the cluster (3-500)."
         },
         "License": {
             "Type": "String",
@@ -708,24 +708,39 @@
                 }
             }
         },
-        "WideOpenVpcSG": {
+    "DefaultSG": {
             "Type": "AWS::EC2::SecurityGroup",
             "Properties": {
                 "VpcId": {
                     "Ref": "vpc"
                 },
-                "GroupDescription": "Wide open",
-                "SecurityGroupIngress": [
-                    {
-                        "IpProtocol": "-1",
-                        "FromPort": "0",
-                        "ToPort": "65535",
-                        "CidrIp": "0.0.0.0/0"
-                    }
-                ]
-            }
-        },
-        "ELBAlias": {
+                "GroupDescription": "Default VPC Security Group. Allows only port 443 externally and all traffic from within the Security Group."
+                }
+    },
+
+     "AllTrafficSecurityGroupIngress" : {
+         "Type" : "AWS::EC2::SecurityGroupIngress",
+         "Properties" : {
+             "GroupId" : { "Ref" : "DefaultSG" },
+             "IpProtocol" : "-1",
+             "ToPort" : "-1",
+             "FromPort" : "0",
+             "SourceSecurityGroupId" : { "Ref" : "DefaultSG" }
+         },
+         "DependsOn" : "DefaultSG"
+     },
+    "HTTPSSecurityGroupIngress" : {
+         "Type" : "AWS::EC2::SecurityGroupIngress",
+         "Properties" : {
+             "GroupId" : { "Ref" : "DefaultSG" },
+             "IpProtocol" : "tcp",
+             "ToPort" : "443",
+             "FromPort" : "443",
+             "CidrIp": "0.0.0.0/0" 
+         },
+         "DependsOn" : "DefaultSG"
+     },
+    "ELBAlias": {
             "Type": "AWS::Route53::RecordSetGroup",
             "Properties": {
                 "HostedZoneId": { "Ref": "HostedZone" },
@@ -854,7 +869,7 @@
                         },
                         "GroupSet": [
                             {
-                                "Ref": "WideOpenVpcSG"
+                                "Ref": "DefaultSG"
                             }
                         ]
                     }
@@ -1005,7 +1020,7 @@
                 },
                 "SecurityGroups": [
                     {
-                        "Ref": "WideOpenVpcSG"
+                        "Ref": "DefaultSG"
                     }
                 ]
             }
@@ -1033,7 +1048,7 @@
                     "Ref": "UCPNode"
                 },
                 "MinSize": "3",
-                "MaxSize": "64",
+                "MaxSize": "500",
                 "DesiredCapacity": {
                     "Ref": "ClusterSize"
                 },
@@ -1087,7 +1102,7 @@
                 "AssociatePublicIpAddress": "true",
                 "SecurityGroups": [
                     {
-                        "Ref": "WideOpenVpcSG"
+                        "Ref": "DefaultSG"
                     }
                 ],
                 "UserData": {
@@ -1193,7 +1208,7 @@
                 },
                 "SecurityGroups": [
                     {
-                        "Ref": "WideOpenVpcSG"
+                        "Ref": "DefaultSG"
                     }
                 ],
                 "UserData": {
@@ -1278,7 +1293,7 @@
                         },
                         "GroupSet": [
                             {
-                                "Ref": "WideOpenVpcSG"
+                                "Ref": "DefaultSG"
                             }
                         ]
                     }
@@ -1459,7 +1474,7 @@
                         },
                         "GroupSet": [
                             {
-                                "Ref": "WideOpenVpcSG"
+                                "Ref": "DefaultSG"
                             }
                         ]
                     }
@@ -1616,7 +1631,7 @@
                         },
                         "GroupSet": [
                             {
-                                "Ref": "WideOpenVpcSG"
+                                "Ref": "DefaultSG"
                             }
                         ]
                     }
@@ -1747,7 +1762,7 @@
                 },
                 "SecurityGroups": [
                     {
-                        "Ref": "WideOpenVpcSG"
+                        "Ref": "DefaultSG"
                     }
                 ]
             }
