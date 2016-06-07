@@ -336,6 +336,9 @@
         }
     },
     "Resources": {
+      "DDCBucket" : {
+      "Type" : "AWS::S3::Bucket"
+    },
         "vpc": {
             "Type": "AWS::EC2::VPC",
             "Properties": {
@@ -736,7 +739,7 @@
              "IpProtocol" : "tcp",
              "ToPort" : "443",
              "FromPort" : "443",
-             "CidrIp": "0.0.0.0/0" 
+             "CidrIp": "0.0.0.0/0"
          },
          "DependsOn" : "DefaultSG"
      },
@@ -822,6 +825,42 @@
                 "Timeout": "900"
             }
         },
+        "ControllerRole": {
+           "Type": "AWS::IAM::Role",
+           "Properties": {
+              "AssumeRolePolicyDocument": {
+                 "Version" : "2012-10-17",
+                 "Statement": [ {
+                    "Effect": "Allow",
+                    "Principal": {
+                       "Service": [ "ec2.amazonaws.com" ]
+                    },
+                    "Action": [ "sts:AssumeRole" ]
+                 } ]
+              },
+              "Path": "/",
+              "Policies": [ {
+                 "PolicyName": "root",
+                 "PolicyDocument": {
+                    "Version" : "2012-10-17",
+                    "Statement": [ {
+                       "Effect": "Allow",
+                       "Action": ["s3:PutObject", "s3:GetObject"],
+                       "Resource": {"Fn::Join": ["", [ "arn:aws:s3:::", {"Ref" : "DDCBucket"}, "/*" ] ] }
+                    } ]
+                 }
+                 } ]
+              }
+        },
+        "ControllerProfile": {
+           "Type": "AWS::IAM::InstanceProfile",
+           "Properties": {
+              "Path": "/",
+              "Roles": [ {
+                 "Ref": "ControllerRole"
+              } ]
+           }
+        },
         "Controller": {
             "DependsOn": "InternetGateway",
             "Type": "AWS::EC2::Instance",
@@ -880,6 +919,11 @@
                             "\n",
                             [
                                 "#!/bin/bash -ex",
+                                "apt-get install unzip",
+                                "#Install AWS CLI",
+                                "curl \"https://s3.amazonaws.com/aws-cli/awscli-bundle.zip\" -o \"awscli-bundle.zip\"",
+                                "unzip awscli-bundle.zip\n",
+                                "./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws",
                                 "#Install Docker",
                                 "sudo hostname ucp-controller\n",
                                 "export HOSTNAME=ucp-controller \n",
@@ -910,6 +954,20 @@
                                                 "Ref": "UCPFQDN"
                                             },
                                             "\n",
+                                            "#create placeholder cert file S3 file for Nico\n",
+                                            "touch s3file\n",
+                                            "#Copy cert bundle to S3",
+                                            "aws s3 cp s3file s3://",
+                                            {"Ref" : "DDCBucket"},
+                                            "/",
+                                            {"Ref" : "UCPFQDN"},
+                                            "/",
+                                            ".certs.backup.tar",
+                                            " --region ",
+                                            {
+                                         "Ref": "AWS::Region"
+                                            },
+                                            "\n",
                                             "# Wait Handle: Controller tests itself to ensure it's responding before signaling CFN. Try in an infinite loop. Wait Handle will tear down stack if timeout exceeded\n",
                                             "# Defining function:\n",
                                             "checkcontroller()\n",
@@ -932,6 +990,7 @@
                         ]
                     }
                 },
+                "IamInstanceProfile": {"Ref": "ControllerProfile"},
                 "Tags": [
                     {
                         "Key": "Name",
@@ -1186,6 +1245,7 @@
                 "InstanceType": {
                     "Ref": "UCPControllersInstanceType"
                 },
+                "IamInstanceProfile": {"Ref": "ControllerProfile"},
                 "KeyName": {
                     "Ref": "KeyName"
                 },
@@ -1217,6 +1277,11 @@
                             "",
                             [
                                 "#!/bin/bash\n",
+                                "apt-get install unzip\n",
+                                "#Install AWS CLI\n",
+                                "curl \"https://s3.amazonaws.com/aws-cli/awscli-bundle.zip\" -o \"awscli-bundle.zip\"\n",
+                                "unzip awscli-bundle.zip\n",
+                                "./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws\n",
                                 "#Install Docker",
                                 "sudo hostname ucp-controller-replica\n",
                                 "export HOSTNAME=ucp-controller-replica \n",
@@ -1806,11 +1871,11 @@
     "Outputs": {
         "Username":{
             "Description": "Default UCP and DTR username",
-            "Value": "admin" 
+            "Value": "admin"
         },
         "Password":{
             "Description": "Default UCP and DTR password. Please Change it!",
-            "Value": "ddconaws" 
+            "Value": "ddconaws"
         },
         "UCPLoginPage": {
             "Description": "UCP Console URL",
