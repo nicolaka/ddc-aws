@@ -535,6 +535,7 @@
         },
         "InternetGateway": {
             "Type": "AWS::EC2::InternetGateway",
+            "DependsOn": "DDCBucket",
             "Properties": {
                 "Tags": [
                     {
@@ -922,10 +923,10 @@
                                 "apt-get install unzip",
                                 "#Install AWS CLI",
                                 "curl \"https://s3.amazonaws.com/aws-cli/awscli-bundle.zip\" -o \"awscli-bundle.zip\"",
-                                "unzip awscli-bundle.zip\n",
+                                "unzip awscli-bundle.zip",
                                 "./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws",
                                 "#Install Docker",
-                                "sudo hostname ucp-controller\n",
+                                "sudo hostname ucp-controller",
                                 "export HOSTNAME=ucp-controller \n",
                                 "sudo sed -i 's/localhost/ucp-controller/g' /etc/hosts \n",
                                 "echo $HOSTNAME | sudo tee  /etc/hostname \n",
@@ -954,7 +955,7 @@
                                                 "Ref": "UCPFQDN"
                                             },
                                             "\n",
-                                            "#create placeholder cert file S3 file for Nico\n",
+                                            "#create placeholder cert file in S3 for Nico\n",
                                             "touch s3file\n",
                                             "#Copy cert bundle to S3\n",
                                             "aws s3 cp s3file s3://",
