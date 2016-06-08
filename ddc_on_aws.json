@@ -302,27 +302,27 @@
                 "HVMG2": "NOT_SUPPORTED"
             },
             "us-west-1": {
-                "HVM64": "NOT_SUPPORTED",
+                "HVM64": "ami-31106a51",
                 "HVMG2": "NOT_SUPPORTED"
             },
             "eu-west-1": {
-                "HVM64": "NOT_SUPPORTED",
+                "HVM64": "ami-8328bbf0",
                 "HVMG2": "NOT_SUPPORTED"
             },
             "eu-central-1": {
-                "HVM64": "NOT_SUPPORTED",
+                "HVM64": "ami-74ee001b",
                 "HVMG2": "NOT_SUPPORTED"
             },
             "ap-northeast-1": {
-                "HVM64": "NOT_SUPPORTED",
+                "HVM64": "ami-bb32ddda",
                 "HVMG2": "NOT_SUPPORTED"
             },
             "ap-southeast-1": {
-                "HVM64": "NOT_SUPPORTED",
+                "HVM64": "ami-c4ae7ea7",
                 "HVMG2": "NOT_SUPPORTED"
             },
             "ap-southeast-2": {
-                "HVM64": "NOT_SUPPORTED",
+                "HVM64": "ami-d5cae4b6",
                 "HVMG2": "NOT_SUPPORTED"
             },
             "sa-east-1": {
@@ -956,12 +956,11 @@
                                             "\n",
                                             "#create placeholder cert file S3 file for Nico\n",
                                             "touch s3file\n",
-                                            "#Copy cert bundle to S3",
+                                            "#Copy cert bundle to S3\n",
                                             "aws s3 cp s3file s3://",
                                             {"Ref" : "DDCBucket"},
                                             "/",
                                             {"Ref" : "UCPFQDN"},
-                                            "/",
                                             ".certs.backup.tar",
                                             " --region ",
                                             {
