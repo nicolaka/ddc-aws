@@ -921,18 +921,18 @@
                             [
                                 "#!/bin/bash -ex",
                                 "apt-get install unzip",
-                                "#Install AWS CLI",
+                                "echo 'Install AWS CLI'",
                                 "curl \"https://s3.amazonaws.com/aws-cli/awscli-bundle.zip\" -o \"awscli-bundle.zip\"",
                                 "unzip awscli-bundle.zip",
                                 "./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws",
-                                "#Install Docker",
+                                "echo 'Installing Docker'",
                                 "sudo hostname ucp-controller",
                                 "export HOSTNAME=ucp-controller \n",
                                 "sudo sed -i 's/localhost/ucp-controller/g' /etc/hosts \n",
                                 "echo $HOSTNAME | sudo tee  /etc/hostname \n",
                                 "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
-                                "#Install CFN-helper Package ",
+                                "echo 'Install CFN-helper Package' ",
                                 "apt-get -y install python-pip",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
                                 "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup",
@@ -950,17 +950,19 @@
                                                 "Ref": "License"
                                             },
                                             "' >> /home/ubuntu/docker_subscription.lic \n",
-                                            "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:1.1.1 install --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
+                                            "sudo docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:1.1.1 install --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
                                             {
                                                 "Ref": "UCPFQDN"
                                             },
                                             "\n",
-                                            "#create placeholder cert file in S3 for Nico\n",
-                                            "touch s3file\n",
-                                            "#Copy cert bundle to S3\n",
-                                            "aws s3 cp s3file s3://",
+                                            "sleep 3 \n",
+                                            "echo 'Create Root CA Backup' \n",
+                                            "export ID=$(sudo docker run --rm --name ucp -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.1 id) \n",
+                                            "sudo docker run --rm --name ucp -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.1 backup --root-ca-only --id $ID --passphrase 'ddconaws' > certs.backup.tar \n",
+                                            "echo 'Copy cert bundle to S3' \n",
+                                            "aws s3 cp certs.backup.tar s3://",
                                             {"Ref" : "DDCBucket"},
-                                            "/",
+                                            "/cabackup/",
                                             {"Ref" : "UCPFQDN"},
                                             ".certs.backup.tar",
                                             " --region ",
@@ -1278,11 +1280,11 @@
                             [
                                 "#!/bin/bash\n",
                                 "apt-get install unzip\n",
-                                "#Install AWS CLI\n",
+                                "echo 'Install AWS CLI'\n",
                                 "curl \"https://s3.amazonaws.com/aws-cli/awscli-bundle.zip\" -o \"awscli-bundle.zip\"\n",
                                 "unzip awscli-bundle.zip\n",
                                 "./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws\n",
-                                "#Install Docker",
+                                "echo 'Installing Docker'",
                                 "sudo hostname ucp-controller-replica\n",
                                 "export HOSTNAME=ucp-controller-replica \n",
                                 "sudo sed -i 's/localhost/controller-replica/g' /etc/hosts \n",
@@ -1304,7 +1306,25 @@
                                 {
                                     "Ref": "UCPFQDN"
                                 },
-                                "\n"
+                                "\n",
+                                "echo 'Downloading Root CA from S3' \n",
+                                "aws s3 cp s3://", {
+                                    "Ref" : "DDCBucket"
+                                },
+                                "/cabackup/", {
+                                    "Ref" : "UCPFQDN"
+                                }, 
+                                ".certs.backup.tar ",
+                                "certs.backup.tar ",
+                                " --region ", {
+                                "Ref": "AWS::Region" 
+                                },
+                                "\n",
+                                "echo 'Restoring Root CA' \n",
+                                "export ID=$(sudo docker run --rm --name ucp -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.1 id) \n",
+                                "sudo docker run -i --rm --name ucp -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.1 restore --id $ID --root-ca-only --passphrase 'ddconaws' < certs.backup.tar \n",
+                                "echo 'Finished Restoring CAs'\n"
+                                
                             ]
                         ]
                     }
@@ -1369,14 +1389,14 @@
                             "\n",
                             [
                                 "#!/bin/bash -ex",
-                                "#Install Docker",
+                                "echo 'Installing Docker'",
                                 "sudo hostname dtr-replica-01\n",
                                 "export HOSTNAME=dtr-replica-01 \n",
                                 "sudo sed -i 's/localhost/dtr-replica-01/g' /etc/hosts \n",
                                 "echo $HOSTNAME | sudo tee  /etc/hostname \n",
                                 "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
-                                "#Install CFN-helper package ",
+                                "echo 'Install CFN-helper Package' ",
                                 "apt-get -y install python-pip",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
                                 "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup",
@@ -1550,21 +1570,21 @@
                             "\n",
                             [
                                 "#!/bin/bash -ex",
-                                "#Install Docker",
+                                "echo 'Installing Docker'",
                                 "sudo hostname dtr-replica-02\n",
                                 "export HOSTNAME=dtr-replica-02 \n",
                                 "sudo sed -i 's/localhost/dtr-replica-02/g' /etc/hosts \n",
                                 "echo $HOSTNAME | sudo tee  /etc/hostname \n",
                                 "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
-                                "#Install CFN-helper package ",
+                                "echo 'Install CFN-helper Package' ",
                                 "apt-get -y install python-pip unzip",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
                                 "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup",
                                 "chmod +x /etc/init.d/cfn-hup",
                                 "update-rc.d cfn-hup defaults",
                                 "service cfn-hup start",
-                                "#Install AWS CLI",
+                                "echo 'Install AWS CLI'",
                                 "curl \"https://s3.amazonaws.com/aws-cli/awscli-bundle.zip\" -o \"awscli-bundle.zip\"",
                                 "unzip awscli-bundle.zip",
                                 "./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws",
@@ -1707,21 +1727,21 @@
                             "\n",
                             [
                                 "#!/bin/bash -ex",
-                                "#Install Docker",
+                                "echo 'Installing Docker' ",
                                 "sudo hostname dtr-replica-03\n",
                                 "export HOSTNAME=dtr-replica-03 \n",
                                 "sudo sed -i 's/localhost/dtr-replica-03/g' /etc/hosts \n",
                                 "echo $HOSTNAME | sudo tee  /etc/hostname \n",
                                 "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
                                 "sudo usermod -aG docker ubuntu \n",
-                                "#Install CFN-helper package ",
+                                "echo 'Install CFN-helper Package' ",
                                 "apt-get -y install python-pip unzip",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
                                 "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup",
                                 "chmod +x /etc/init.d/cfn-hup",
                                 "update-rc.d cfn-hup defaults",
                                 "service cfn-hup start",
-                                "#Install AWS CLI",
+                                "echo 'Install AWS CLI'",
                                 "curl \"https://s3.amazonaws.com/aws-cli/awscli-bundle.zip\" -o \"awscli-bundle.zip\"",
                                 "unzip awscli-bundle.zip",
                                 "./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws",
@@ -1876,6 +1896,13 @@
         "Password":{
             "Description": "Default UCP and DTR password. Please Change it!",
             "Value": "ddconaws"
+        },
+        "S3Bucket":{
+            "Description": "S3 Bucket Name for DDC. S3 Bucket was used to backup Root CA. You may also use this bucket to store DTR images.",
+            "Value" :
+                {
+                    "Ref" : "DDCBucket"
+                }
         },
         "UCPLoginPage": {
             "Description": "UCP Console URL",
