@@ -535,7 +535,6 @@
         },
         "InternetGateway": {
             "Type": "AWS::EC2::InternetGateway",
-            "DependsOn": "DDCBucket",
             "Properties": {
                 "Tags": [
                     {
@@ -556,6 +555,7 @@
             }
         },
         "AttachGateway": {
+            "DependsOn": "InternetGateway",
             "Type": "AWS::EC2::VPCGatewayAttachment",
             "Properties": {
                 "VpcId": {
@@ -567,6 +567,7 @@
             }
         },
         "RouteViaIgw": {
+            "DependsOn": "AttachGateway",
             "Type": "AWS::EC2::RouteTable",
             "Properties": {
                 "VpcId": {
@@ -575,6 +576,7 @@
             }
         },
         "PublicRouteViaIgw": {
+
             "Type": "AWS::EC2::Route",
             "Properties": {
                 "RouteTableId": {
@@ -609,7 +611,7 @@
             }
         },
         "NATAZ1": {
-            "DependsOn": "AttachGateway",
+
             "Type": "AWS::EC2::NatGateway",
             "Properties": {
                 "AllocationId": {
@@ -624,6 +626,7 @@
             }
         },
         "EIP1": {
+            "DependsOn": "AttachGateway",
             "Type": "AWS::EC2::EIP",
             "Properties": {
                 "Domain": "vpc"
@@ -661,7 +664,7 @@
             }
         },
         "NATAZ2": {
-            "DependsOn": "AttachGateway",
+
             "Type": "AWS::EC2::NatGateway",
             "Properties": {
                 "AllocationId": {
@@ -676,6 +679,7 @@
             }
         },
         "EIP2": {
+            "DependsOn": "AttachGateway",
             "Type": "AWS::EC2::EIP",
             "Properties": {
                 "Domain": "vpc"
@@ -730,8 +734,7 @@
              "ToPort" : "-1",
              "FromPort" : "0",
              "SourceSecurityGroupId" : { "Ref" : "DefaultSG" }
-         },
-         "DependsOn" : "DefaultSG"
+         }
      },
     "HTTPSSecurityGroupIngress" : {
          "Type" : "AWS::EC2::SecurityGroupIngress",
@@ -741,8 +744,7 @@
              "ToPort" : "443",
              "FromPort" : "443",
              "CidrIp": "0.0.0.0/0"
-         },
-         "DependsOn" : "DefaultSG"
+         }
      },
     "ELBAlias": {
             "Type": "AWS::Route53::RecordSetGroup",
@@ -863,7 +865,7 @@
            }
         },
         "Controller": {
-            "DependsOn": "InternetGateway",
+            "DependsOn": "NatAZ1Route",
             "Type": "AWS::EC2::Instance",
             "Properties": {
                 "AvailabilityZone": {
@@ -1194,7 +1196,7 @@
             }
         },
         "ControllerReplicaAsg": {
-            "DependsOn": "WaitCondition01",
+            "DependsOn": "NatAZ2Route",
             "Type": "AWS::AutoScaling::AutoScalingGroup",
             "Properties": {
                 "VPCZoneIdentifier": [
@@ -1313,18 +1315,18 @@
                                 },
                                 "/cabackup/", {
                                     "Ref" : "UCPFQDN"
-                                }, 
+                                },
                                 ".certs.backup.tar ",
                                 "certs.backup.tar ",
                                 " --region ", {
-                                "Ref": "AWS::Region" 
+                                "Ref": "AWS::Region"
                                 },
                                 "\n",
                                 "echo 'Restoring Root CA' \n",
                                 "export ID=$(sudo docker run --rm --name ucp -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.1 id) \n",
                                 "sudo docker run -i --rm --name ucp -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.1 restore --id $ID --root-ca-only --passphrase 'ddconaws' < certs.backup.tar \n",
                                 "echo 'Finished Restoring CAs'\n"
-                                
+
                             ]
                         ]
                     }
