@@ -24,7 +24,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 
 ## How to Launch
 
-[![Docker Datacenter on AWS](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?#/stacks/new?stackName=DockerDatacenter&templateURL=https://s3.amazonaws.com/public-cloudformation-templates/ddc_on_aws.json)
+[![Docker Datacenter on AWS](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?#/stacks/new?stackName=DockerDatacenter&templateURL=https://s3-us-west-2.amazonaws.com/ddc-on-aws-public/ddc_on_aws.json)
 
 
 - Click on **Launch Stack**. This link will take you to AWS Cloudformation portal.
@@ -70,9 +70,9 @@ The AWS Cloudformation starts the installation process by creating all the requi
 **Notes and Caveats**
 
 - UCP and DTR default username and password are `admin/ddconaws`. **PLEASE CHANGE PASSWORD in UCP portal!!**
-- Full UCP and DTR Configuration guides are found [here](https://docs.docker.com/docker-trusted-registry/overview/) and [here](https://docs.docker.com/docker-trusted-registry/configure/configuration/).
+- External Certs: Both UCP and DTR are installed with self-signed certs today. If you wish to use your own certs, you can do so by following the UCP and DTR configuration guides. Full UCP and DTR Configuration guides are found [here](https://docs.docker.com/docker-trusted-registry/overview/) and [here](https://docs.docker.com/docker-trusted-registry/configure/configuration/).
 -  A Single Security Group is used in this setup. The security group only allows HTTPS traffic from external IPs. Security group doesn't limit any traffic from within the cluster. Please adjust it as heeded. 
-- SSH: If you need to SSH into the cluster you need to edit the security group setting to allow TCP port 22. Additionally, since all the instances are not part of any public subnet, you need to launch a  separate jumphost on the public subnet and use it to ssh into any of the EC2 instances. 
+- SSH: If you need to SSH into the cluster you need to edit the security group setting to allow TCP port 22. Additionally, since all the instances are not part of any public subnet, you need to launch a  separate jumphost on the public subnet and use it to ssh into any of the EC2 instances.
 - Default username for `ubuntu` based AMI's is `ubuntu`.
 - Supported AWS Reqgions: 
 	- us-east-1
@@ -86,17 +86,14 @@ The AWS Cloudformation starts the installation process by creating all the requi
 
 ## FAQ
 
-- What's the support model for Docker Datacenter on AWS ?
+- **What's the support model for Docker Datacenter on AWS ?**
 
 The solution provided is based on Docker and AWS best practices and therefore the Docker Dataceter components of the solution are commercially supported by Docker  while the AWS components are supported by AWS. If you are facing any issues related to launching the solution please open issues here on Github. If the issues your'e facing are related to Docker Datacenter components please contact Docker support. If the issues your'e facing are related to AWS specifically, please contact AWS support.
 
-- How can I obtain Docker Datacenter license?
+- **How can I obtain Docker Datacenter license?**
 
-You can obratin trial license quickly and easily by going to [here](https://hub.docker.com/enterprise/trial/). If you're interested in buygin Docker Datacenter subscription please contact Docker [here](https://goto.docker.com/contact-us.html).
+You can obratin trial license quickly and easily by going to [here](https://hub.docker.com/enterprise/trial/). If you're interested in buying Docker Datacenter subscription please contact Docker [here](https://goto.docker.com/contact-us.html).
 
-- Can I contribute to this repo?
-
-Absolutely, please submit a PR!
 
 
 
