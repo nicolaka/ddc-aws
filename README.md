@@ -62,7 +62,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 
 **Software Versions**
 
-- EC2 instales use Ubuntu 14.04 LTS AMI
+- EC2 instances use Ubuntu 14.04 LTS AMI
 - Docker Commercially Supported Engine 1.11
 - UCP 1.1.1
 - DTR 2.0.1
@@ -71,7 +71,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 
 - UCP and DTR default username and password are `admin/ddconaws`. **PLEASE CHANGE PASSWORD in UCP portal!!**
 - External Certs: Both UCP and DTR are installed with self-signed certs today. If you wish to use your own certs, you can do so by following the UCP and DTR configuration guides. Full UCP and DTR Configuration guides are found [here](https://docs.docker.com/docker-trusted-registry/overview/) and [here](https://docs.docker.com/docker-trusted-registry/configure/configuration/).
--  A Single Security Group is used in this setup. The security group only allows HTTPS traffic from external IPs. Security group doesn't limit any traffic from within the cluster. Please adjust it as heeded. 
+-  A Single Security Group is used in this setup. The security group only allows HTTPS traffic from external IPs. Security group doesn't limit any traffic from within the cluster. Please adjust it as needed. 
 - SSH: If you need to SSH into the cluster you need to edit the security group setting to allow TCP port 22. Additionally, since all the instances are not part of any public subnet, you need to launch a  separate jumphost on the public subnet and use it to ssh into any of the EC2 instances.
 - Default username for `ubuntu` based AMI's is `ubuntu`.
 - Supported AWS Reqgions: 
