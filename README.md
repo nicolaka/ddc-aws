@@ -38,7 +38,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 **Required Paramters**
 
 - **KeyName**: Name of an existing EC2 KeyPair to enable SSH access to the instances
-- **HostedZone**: Route53 Public or Private HostedZone ID to use. (e.g. Z2FDTNDATAQYW2)
+- **HostedZone**: Route53 Public HostedZone ID to use. (e.g. Z2FDTNDATAQYW2)
 - **UCPFQDN**: FQDN, including subdomain, for UCP (e.g. ucp.example.com). Must be subdomain of selected Route53 HostedZone
 - **DTRFQDN**: FQDN, including subdomain, for DTR (e.g. dtr.example.com). Must be subdomain of selected Route53 HostedZone
 - **UCPControllersInstanceType**: AWS EC2 Instance Type for UCP Controllers only. Minimum required is **m3.medium**
