@@ -41,6 +41,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 - **HostedZone**: Route53 Public HostedZone ID to use. (e.g. Z2FDTNDATAQYW2)
 - **UCPFQDN**: FQDN, including subdomain, for UCP (e.g. ucp.example.com). Must be subdomain of selected Route53 HostedZone
 - **DTRFQDN**: FQDN, including subdomain, for DTR (e.g. dtr.example.com). Must be subdomain of selected Route53 HostedZone
+- **APPFQDN**: FQDN, including subdomain, for the applications' ELB (e.g. *.apps.example.com). Must be subdomain of selected Route53 HostedZone.
 - **UCPControllersInstanceType**: AWS EC2 Instance Type for UCP Controllers only. Minimum required is **m3.medium**
 - **DTRInstanceType**: AWS EC2 Instance Type for DTR Replicats Only. Minimum required is **m3.medium**
 - **UCPNodesInstanceType**: AWS EC2 Instance Type for UCP nodes
@@ -59,22 +60,23 @@ The AWS Cloudformation starts the installation process by creating all the requi
 - Create a 3 DTR Replicas across multiple AZs within your VPC
 - Creates a DTR with preconfigured healthchecks
 - Creates a DNS record and attaches it to DTR ELB
+- Creates a jumphost to allow ssh access to DDC nodes. 
 
 **Software Versions**
 
 - EC2 instances use Ubuntu 14.04 LTS AMI
 - Docker Commercially Supported Engine 1.11
-- UCP 1.1.1
-- DTR 2.0.1
+- UCP 1.1.2
+- DTR 2.0.3
 
 **Notes and Caveats**
 
 - UCP and DTR default username and password are `admin/ddconaws`. **PLEASE CHANGE PASSWORD in UCP portal!!**
 - External Certs: Both UCP and DTR are installed with self-signed certs today. If you wish to use your own certs, you can do so by following the UCP and DTR configuration guides. Full UCP and DTR Configuration guides are found [here](https://docs.docker.com/docker-trusted-registry/overview/) and [here](https://docs.docker.com/docker-trusted-registry/configure/configuration/).
--  A Single Security Group is used in this setup. The security group only allows HTTPS traffic from external IPs. Security group doesn't limit any traffic from within the cluster. Please adjust it as needed. 
-- SSH: If you need to SSH into the cluster you need to edit the security group setting to allow TCP port 22. Additionally, since all the instances are not part of any public subnet, you need to launch a  separate jumphost on the public subnet and use it to ssh into any of the EC2 instances.
+-  A Single Security Group is used in this setup. The security group only allows HTTP,HTTPS, and SSH traffic from external IPs. Security group doesn't limit any traffic from within the cluster. Please adjust it as needed. 
+- SSH: If you need to SSH into the cluster you can do so by using [SSH agent forwarding](https://developer.github.com/guides/using-ssh-agent-forwarding/) and sshing into the jumphost node using the selected private key. Once you're logged into the jumphost, you can use the private IP address of any of the other nodes to ssh into them. 
 - Default username for `ubuntu` based AMI's is `ubuntu`.
-- Supported AWS Reqgions: 
+- Supported AWS Regions: 
 	- us-east-1
 	- us-west-2
 	- us-west-1
