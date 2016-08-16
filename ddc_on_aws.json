@@ -2173,7 +2173,7 @@
         "Jumphost":{
             "Description": "Jumphost ssh details to be able to ssh into other DDC nodes",
             "Value" : {
-                "Fn::Join": [ "", ["ssh ubuntu@", {"Fn::GetAtt" : [ "Jumphost", "PublicIp"] } ] ]
+                "Fn::Join": [ "", ["ssh -i <your-private-key.pem> ubuntu@", {"Fn::GetAtt" : [ "Jumphost", "PublicIp"] } ] ]
             }
         },
         "S3Bucket":{

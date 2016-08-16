@@ -17,7 +17,7 @@ Docker Data Center is composed of two main components: Docker Universal Control 
 
 ![](images/design_3.png)
 
-The AWS Cloudformation starts the installation process by creating all the required AWS resources such as the VPC, security groups, public and private subnets, internet gateways, NAT gateways, and S3 bucket. It then launches the first UCP controller instances and goes through the installation process of Docker engine and UCP containers. It backs the Root CAs created by the first UCP controllers to S3. Once the first UCP controller is up and running, the process of creating the other UCP controllers, the UCP cluster nodes, and the first DTR replica is triggered. Similar to the first UCP controller node, all other nodes are started by installing Docker Commercially Supported engine, followed by running the UCP and DTR containers to join the cluster. Two ELBs, one for UCP and one for DTR, are launched and automatically configured to provide resilient loadbalancing across the two AZs. Additionally, UCP controllers and nodes are launched in an ASG to provide scaling functionality if needed. This architecture ensures that both UCP and DTR instances are spread across both AZs to ensure resilincy and high-availability. Route53 is used to dynamically register and configure UCP and DTR in your private or public HostedZone.
+The AWS Cloudformation starts the installation process by creating all the required AWS resources such as the VPC, security groups, public and private subnets, internet gateways, NAT gateways, and S3 bucket. It then launches the first UCP controller instances and goes through the installation process of Docker engine and UCP containers. It backs the Root CAs created by the first UCP controllers to S3. Once the first UCP controller is up and running, the process of creating the other UCP controllers, the UCP cluster nodes, and the first DTR replica is triggered. Similar to the first UCP controller node, all other nodes are started by installing Docker Commercially Supported engine, followed by running the UCP and DTR containers to join the cluster. Three ELBs, one for UCP, one for DTR and a third for your application, are launched and automatically configured to provide resilient loadbalancing across the two AZs. Additionally, UCP controllers and nodes are launched in an ASG to provide scaling functionality if needed. This architecture ensures that both UCP and DTR instances are spread across both AZs to ensure resilincy and high-availability. Route53 is used to dynamically register and configure UCP and DTR in your public HostedZone.
 
 
 ![](images/design_2.png)
@@ -31,22 +31,22 @@ The AWS Cloudformation starts the installation process by creating all the requi
 - Confirm your AWS Region that you'd like to launch this stack in ( top right corner)
 - Provide the required paramters ( listed below ) and click **Next**
 - Confirm and Launch.
-- Once all done ( it does take between 20-30 mins), click on outputs tab to see the URLs of UCP/DTR, default username, and password, and S3 bucket name.
-
+- Once all done ( it does take between 20-30 mins), click on outputs tab to see the URLs of UCP/DTR, default username, and password, jumphost info, and S3 bucket name.
 
 
 **Required Paramters**
 
 - **KeyName**: Name of an existing EC2 KeyPair to enable SSH access to the instances
-- **HostedZone**: Route53 Public HostedZone ID to use. (e.g. Z2FDTNDATAQYW2)
+- **HostedZone**: Route53 Public HostedZone ID to use. (e.g. Z2FDTNDATAQYW2). If you intend to use a Priavte HostedZone, you need to follow [this](https://github.com/nicolaka/ddc-aws/issues/41#issuecomment-229153959) workaround.
 - **UCPFQDN**: FQDN, including subdomain, for UCP (e.g. ucp.example.com). Must be subdomain of selected Route53 HostedZone
 - **DTRFQDN**: FQDN, including subdomain, for DTR (e.g. dtr.example.com). Must be subdomain of selected Route53 HostedZone
-- **APPFQDN**: FQDN, including subdomain, for the applications' ELB (e.g. *.apps.example.com). Must be subdomain of selected Route53 HostedZone.
+- **APPFQDN**: FQDN, including subdomain, for the applications' ELB (e.g. *.app.example.com). Must be subdomain of selected Route53 HostedZone.
 - **UCPControllersInstanceType**: AWS EC2 Instance Type for UCP Controllers only. Minimum required is **m3.medium**
 - **DTRInstanceType**: AWS EC2 Instance Type for DTR Replicats Only. Minimum required is **m3.medium**
 - **UCPNodesInstanceType**: AWS EC2 Instance Type for UCP nodes
 - **ClusterSize**: Number of UCP nodes (3-64)
 - **License**: Docker Datacenter License (copy+past it in JSON format or URL to download it). You can easily get trial license [here](https://hub.docker.com/enterprise/trial/)
+- **RootVolumeSize**: Root filesystem size in GB. This will be used for all instances ( UCP Controllers, UCP Nodes, and DTR Nodes)
 
 **Key Functionalities**
 
@@ -60,7 +60,8 @@ The AWS Cloudformation starts the installation process by creating all the requi
 - Create a 3 DTR Replicas across multiple AZs within your VPC
 - Creates a DTR with preconfigured healthchecks
 - Creates a DNS record and attaches it to DTR ELB
-- Creates a jumphost to allow ssh access to DDC nodes. 
+- Creates a jumphost ec2 instance to be able to ssh to the DDC nodes
+- Creates a UCP Nodes ELB with preconfigured healthchecks (TCP Port 80). This can be used for your application that are deployed on UCP. 
 
 **Software Versions**
 
@@ -72,7 +73,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 **Notes and Caveats**
 
 - UCP and DTR default username and password are `admin/ddconaws`. **PLEASE CHANGE PASSWORD in UCP portal!!**
-- External Certs: Both UCP and DTR are installed with self-signed certs today. If you wish to use your own certs, you can do so by following the UCP and DTR configuration guides. Full UCP and DTR Configuration guides are found [here](https://docs.docker.com/docker-trusted-registry/overview/) and [here](https://docs.docker.com/docker-trusted-registry/configure/configuration/).
+- External Certs: Both UCP and DTR are installed with self-signed certs today. If you wish to use your own certs, you can do so by following the UCP and DTR configuration guides. Full UCP and DTR Configuration guides are found [here](https://docs.docker.com/ucp/configuration/use-externally-signed-certs/) and [here](https://docs.docker.com/docker-trusted-registry/configure/configuration/).
 -  A Single Security Group is used in this setup. The security group only allows HTTP,HTTPS, and SSH traffic from external IPs. Security group doesn't limit any traffic from within the cluster. Please adjust it as needed. 
 - SSH: If you need to SSH into the cluster you can do so by using [SSH agent forwarding](https://developer.github.com/guides/using-ssh-agent-forwarding/) and sshing into the jumphost node using the selected private key. Once you're logged into the jumphost, you can use the private IP address of any of the other nodes to ssh into them. 
 - Default username for `ubuntu` based AMI's is `ubuntu`.
@@ -85,6 +86,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 	- ap-northeast-1
 	- ap-southeast-1
 	- ap-southeast-2
+	- ap-south-1
 
 ## FAQ
 
@@ -94,7 +96,7 @@ The solution provided is based on Docker and AWS best practices and therefore th
 
 - **How can I obtain Docker Datacenter license?**
 
-You can obratin trial license quickly and easily by going to [here](https://hub.docker.com/enterprise/trial/). If you're interested in buying Docker Datacenter subscription please contact Docker [here](https://goto.docker.com/contact-us.html).
+You can obratin trial license quickly and easily by going to [here](https://store.docker.com/bundles/docker-datacenter). If you're interested in buying Docker Datacenter subscription please contact Docker [here](https://goto.docker.com/contact-us.html).
 
 
 
