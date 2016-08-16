@@ -90,6 +90,19 @@ The AWS Cloudformation starts the installation process by creating all the requi
 
 ## FAQ
 
+- **My AWS Cloudformation is failing to launch. How should I do ?**
+
+1. Open an issue in this repo after checking that it doesn't already exist.
+2. Make sure you capture the stack events and parameters provided. 
+3. Make sure you capture the Cloudformation Stack ID.
+4. If you know which instance is failing, ssh into the instance( via the jumphost instance) and capture the following:
+
+```
+/var/log/cloud-init-output.log
+/var/lib/cloud/instance/scripts/part-001
+```
+
+
 - **What's the support model for Docker Datacenter on AWS ?**
 
 The solution provided is based on Docker and AWS best practices and therefore the Docker Dataceter components of the solution are commercially supported by Docker  while the AWS components are supported by AWS. If you are facing any issues related to launching the solution please open issues here on Github. If the issues your'e facing are related to Docker Datacenter components please contact Docker support. If the issues your'e facing are related to AWS specifically, please contact AWS support.
