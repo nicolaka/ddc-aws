@@ -1261,7 +1261,7 @@
                     }
                 ],
                 "HealthCheck": {
-                    "Target": "TCP:443",
+                    "Target": "HTTPS:443/_ping",
                     "HealthyThreshold": "2",
                     "UnhealthyThreshold": "10",
                     "Interval": "30",
@@ -2037,7 +2037,7 @@
                     }
                 ],
                 "HealthCheck": {
-                    "Target": "TCP:443",
+                    "Target": "HTTPS:443/health",
                     "HealthyThreshold": "2",
                     "UnhealthyThreshold": "10",
                     "Interval": "30",
