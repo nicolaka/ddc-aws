@@ -102,6 +102,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 /var/lib/cloud/instance/scripts/part-001
 ```
 
+
 - **What's the support model for Docker Datacenter on AWS ?**
 
 The solution provided is based on Docker and AWS best practices and therefore the Docker Dataceter components of the solution are commercially supported by Docker  while the AWS components are supported by AWS. If you are facing any issues related to launching the solution please open issues here on Github. If the issues your'e facing are related to Docker Datacenter components please contact Docker support. If the issues your'e facing are related to AWS specifically, please contact AWS support.
@@ -110,10 +111,9 @@ The solution provided is based on Docker and AWS best practices and therefore th
 
 You can obtain trial license quickly and easily by going to [here](https://store.docker.com/bundles/docker-datacenter). If you're interested in buying Docker Datacenter subscription please contact Docker [here](https://goto.docker.com/contact-us.html).
 
+**Cloudformation Test Results**
 
-
-
-
+![](images/v1.1_rest_results.png)
 
 
 
