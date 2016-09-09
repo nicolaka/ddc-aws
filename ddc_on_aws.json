@@ -2176,6 +2176,12 @@
                 "Fn::Join": [ "", ["ssh -i ",{ "Ref": "KeyName"},".pem ubuntu@",{"Fn::GetAtt" : [ "Jumphost", "PublicIp"] } ] ]
             }
         },
+        "JumphostIP":{
+            "Description": "Jumphost IP for an A record.",
+            "Value": {
+                "FN::GetAtt": [ "Jumphost", "PublicIp" ]
+            }
+        },
         "S3Bucket":{
             "Description": "S3 Bucket Name for DDC. S3 Bucket was used to backup Root CA. You may also use this bucket to store DTR images.",
             "Value" :
