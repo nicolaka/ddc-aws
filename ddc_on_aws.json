@@ -364,6 +364,27 @@
         }
     },
     "Resources": {
+      "ControllerLogGroup"  : {
+      "Type" : "AWS::Logs::LogGroup",
+      "Properties" : {
+        "LogGroupName" : "UCPControllers",
+        "RetentionInDays" : 14
+      }
+    },
+    "DTRLogGroup"  : {
+    "Type" : "AWS::Logs::LogGroup",
+    "Properties" : {
+      "LogGroupName" : "DTRControllers",
+      "RetentionInDays" : 14
+    }
+  },
+  "SwarmLogGroup"  : {
+  "Type" : "AWS::Logs::LogGroup",
+  "Properties" : {
+    "LogGroupName" : "SwarmNodes",
+    "RetentionInDays" : 14
+  }
+},
       "DDCBucket" : {
       "Type" : "AWS::S3::Bucket",
 	  "DeletionPolicy" : "Retain"
@@ -796,7 +817,7 @@
          }
      },
 
- 
+
 
     "ELBAlias": {
             "Type": "AWS::Route53::RecordSetGroup",
@@ -995,7 +1016,18 @@
                        "Resource": {"Fn::Join": ["", [ "arn:aws:s3:::", {"Ref" : "DDCBucket"}, "/*" ] ] }
                     } ]
                  }
-                 } ]
+                 },
+                 { "PolicyName": "AWSLogs",
+                   "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement":  [ {
+                    "Effect": "Allow",
+                    "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                    "Resource": "*"
+                   } ]
+                 }
+              }
+            ]
               }
         },
         "ControllerProfile": {
@@ -1063,7 +1095,7 @@
                 "BlockDeviceMappings": [
                     {
                         "DeviceName": "/dev/sda1",
-                        "Ebs": { 
+                        "Ebs": {
                             "VolumeSize": { "Ref": "RootVolumeSize" },
                             "VolumeType": "gp2"
                         }
@@ -1081,12 +1113,12 @@
                                 "unzip awscli-bundle.zip",
                                 "./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws",
                                 "echo 'Installing Docker'",
-                                "sudo hostname ucp-controller \n",
-                                "export HOSTNAME=ucp-controller \n",
-                                "sudo sed -i 's/localhost/ucp-controller/g' /etc/hosts \n",
-                                "echo $HOSTNAME | sudo tee  /etc/hostname \n",
-                                "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
-                                "sudo usermod -aG docker ubuntu \n",
+                                "sudo hostname ucp-controller",
+                                "export HOSTNAME=ucp-controller",
+                                "sudo sed -i 's/localhost/ucp-controller/g' /etc/hosts",
+                                "echo $HOSTNAME | sudo tee  /etc/hostname",
+                                "curl -sSL https://packages.docker.com/1.11/install.sh | sh",
+                                "sudo usermod -aG docker ubuntu",
                                 "echo 'Install CFN-helper Package' ",
                                 "apt-get -y install python-pip",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
@@ -1115,7 +1147,9 @@
                                             "curl -s $INPUT >>/home/ubuntu/docker_subscription.lic \n",
                                             "else echo \"License input must be a valid s3 location or json license key\" \n",
                                             "fi \n",
-                                            "sudo docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:1.1.3 install --debug --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
+                                            "sudo docker run --log-driver=awslogs --log-opt awslogs-group=",
+                                            {"Ref": "ControllerLogGroup"},
+                                            " --rm -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=ddconaws --name ucp docker/ucp:1.1.3 install --debug --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
                                             {
                                                 "Ref": "UCPFQDN"
                                             },
@@ -1292,6 +1326,43 @@
                 ]
             }
         },
+        "UCPNodeRole": {
+           "Type": "AWS::IAM::Role",
+           "Properties": {
+              "AssumeRolePolicyDocument": {
+                 "Version" : "2012-10-17",
+                 "Statement": [ {
+                    "Effect": "Allow",
+                    "Principal": {
+                       "Service": [ "ec2.amazonaws.com" ]
+                    },
+                    "Action": [ "sts:AssumeRole" ]
+                 } ]
+              },
+              "Path": "/",
+              "Policies": [
+               { "PolicyName": "AWSLogs",
+                 "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement":  [ {
+                  "Effect": "Allow",
+                  "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                  "Resource": "*"
+                 } ]
+               }
+            }
+              ]
+              }
+        },
+        "UCPNodeProfile": {
+           "Type": "AWS::IAM::InstanceProfile",
+           "Properties": {
+              "Path": "/",
+              "Roles": [ {
+                 "Ref": "UCPNodeRole"
+              } ]
+           }
+        },
         "UCPNodeAsg": {
             "DependsOn": "WaitCondition01",
             "Type": "AWS::AutoScaling::AutoScalingGroup",
@@ -1348,6 +1419,7 @@
                 "InstanceType": {
                     "Ref": "UCPNodesInstanceType"
                 },
+                "IamInstanceProfile": {"Ref": "UCPNodeProfile"},
                 "KeyName": {
                     "Ref": "KeyName"
                 },
@@ -1377,7 +1449,7 @@
                 "BlockDeviceMappings": [
                     {
                         "DeviceName": "/dev/sda1",
-                        "Ebs": { 
+                        "Ebs": {
                             "VolumeSize": { "Ref": "RootVolumeSize" },
                             "VolumeType": "gp2"
                         }
@@ -1408,7 +1480,9 @@
                                 "\n",
                                 "curl --insecure $UCP_URL/ca > ca.pem\n",
                                 "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
-                                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.3 join --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n"
+                                "sudo -E docker run --log-driver=awslogs --log-opt awslogs-group=",
+                                {"Ref": "SwarmLogGroup"},
+                                " --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.3 join --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n"
                             ]
                         ]
                     }
@@ -1498,7 +1572,7 @@
                 "BlockDeviceMappings": [
                     {
                         "DeviceName": "/dev/sda1",
-                        "Ebs": { 
+                        "Ebs": {
                             "VolumeSize": { "Ref": "RootVolumeSize" },
                             "VolumeType": "gp2"
                         }
@@ -1534,7 +1608,9 @@
                                 "\n",
                                 "curl --insecure $UCP_URL/ca > ca.pem\n",
                                 "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
-                                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.3 join  --replica  --url $UCP_URL --fingerprint $UCP_FINGERPRINT --san ",
+                                "sudo -E docker run --log-driver=awslogs --log-opt awslogs-group=",
+                                {"Ref": "ControllerLogGroup"},
+                                " --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.3 join  --replica  --url $UCP_URL --fingerprint $UCP_FINGERPRINT --san ",
                                 {
                                     "Ref": "UCPFQDN"
                                 },
@@ -1618,7 +1694,7 @@
                 "BlockDeviceMappings": [
                     {
                         "DeviceName": "/dev/sda1",
-                        "Ebs": { 
+                        "Ebs": {
                             "VolumeSize": { "Ref": "RootVolumeSize" },
                             "VolumeType": "gp2"
                         }
@@ -1631,12 +1707,12 @@
                             [
                                 "#!/bin/bash -ex",
                                 "echo 'Installing Docker'",
-                                "sudo hostname dtr-replica-01\n",
-                                "export HOSTNAME=dtr-replica-01 \n",
-                                "sudo sed -i 's/localhost/dtr-replica-01/g' /etc/hosts \n",
-                                "echo $HOSTNAME | sudo tee  /etc/hostname \n",
-                                "curl -sSL https://packages.docker.com/1.11/install.sh | sh \n",
-                                "sudo usermod -aG docker ubuntu \n",
+                                "sudo hostname dtr-replica-01",
+                                "export HOSTNAME=dtr-replica-01",
+                                "sudo sed -i 's/localhost/dtr-replica-01/g' /etc/hosts",
+                                "echo $HOSTNAME | sudo tee  /etc/hostname",
+                                "curl -sSL https://packages.docker.com/1.11/install.sh | sh",
+                                "sudo usermod -aG docker ubuntu",
                                 "echo 'Install CFN-helper Package' ",
                                 "apt-get -y install python-pip",
                                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
@@ -1675,7 +1751,9 @@
                                             "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.3 join --debug --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
                                             "# Installing DTR Replica\n",
                                             "sleep 60 \n",
-                                            "sudo -E docker run --rm -i docker/dtr:2.0.3 install --debug --ucp-url https://$UCPFQDN --ucp-node  dtr-replica-01 --dtr-external-url $DTRFQDN:443 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000001 \n",
+                                            "sudo -E docker run --log-driver=awslogs --log-opt awslogs-group=",
+                                            {"Ref": "DTRLogGroup"},
+                                            " --rm -i docker/dtr:2.0.3 install --debug --ucp-url https://$UCPFQDN --ucp-node  dtr-replica-01 --dtr-external-url $DTRFQDN:443 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000001 \n",
                                             "# Wait Handle: DTR tests itself to ensure it's responding before signaling CFN. Try in an infinite loop. Wait Handle will tear down stack if timeout exceeded\n",
                                             "# Defining function:\n",
                                             "checkcontroller()\n",
@@ -1747,7 +1825,17 @@
                   }
                 ]
                }
-               }
+             },
+             { "PolicyName": "AWSLogs",
+               "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement":  [ {
+                "Effect": "Allow",
+                "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+                "Resource": "*"
+               } ]
+             }
+          }
             ]
             }
       },
@@ -1816,7 +1904,7 @@
                 "BlockDeviceMappings": [
                     {
                         "DeviceName": "/dev/sda1",
-                        "Ebs": { 
+                        "Ebs": {
                             "VolumeSize": { "Ref": "RootVolumeSize" },
                             "VolumeType": "gp2"
                         }
@@ -1877,7 +1965,9 @@
                                             "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.3 join --debug --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
                                             "# Installing DTR Replica\n",
                                             "sleep 60 \n",
-                                            "sudo -E docker run --rm -i docker/dtr:2.0.3 join --debug --ucp-url https://$UCPFQDN --ucp-node  dtr-replica-02 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000002 --existing-replica-id 000000000001 \n",
+                                            "sudo -E docker run --log-driver=awslogs --log-opt awslogs-group=",
+                                            {"Ref": "DTRLogGroup"},
+                                            " --rm -i docker/dtr:2.0.3 join --debug --ucp-url https://$UCPFQDN --ucp-node  dtr-replica-02 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000002 --existing-replica-id 000000000001 \n",
                                             "# Wait Handle: DTR tests itself to ensure it's responding before signaling CFN. Try in an infinite loop. Wait Handle will tear down stack if timeout exceeded\n",
                                             "# Defining function:\n",
                                             "checkcontroller()\n",
@@ -1982,7 +2072,7 @@
                 "BlockDeviceMappings": [
                     {
                         "DeviceName": "/dev/sda1",
-                        "Ebs": { 
+                        "Ebs": {
                             "VolumeSize": { "Ref": "RootVolumeSize" },
                             "VolumeType": "gp2"
                         }
@@ -2043,7 +2133,9 @@
                                             "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=admin -e UCP_ADMIN_PASSWORD=ddconaws -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.3 join --debug --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
                                             "# Installing DTR Replica\n",
                                             "sleep 60 \n",
-                                            "sudo -E docker run --rm -i docker/dtr:2.0.3 join --debug --ucp-url https://$UCPFQDN --ucp-node dtr-replica-03 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000003 --existing-replica-id 000000000001 \n",
+                                            "sudo -E docker run --log-driver=awslogs --log-opt awslogs-group=",
+                                            {"Ref": "DTRLogGroup"},
+                                            " --rm -i docker/dtr:2.0.3 join --debug --ucp-url https://$UCPFQDN --ucp-node dtr-replica-03 --ucp-username admin --ucp-password ddconaws --ucp-insecure-tls --replica-id 000000000003 --existing-replica-id 000000000001 \n",
                                             "#Register instance with ELB\n",
                                             "INSTANCE=\"$(curl 169.254.169.254/latest/meta-data/instance-id)\"\n",
                                             "aws elb register-instances-with-load-balancer --load-balancer-name ",
