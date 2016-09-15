@@ -364,27 +364,51 @@
         }
     },
     "Resources": {
-      "ControllerLogGroup"  : {
-      "Type" : "AWS::Logs::LogGroup",
-      "Properties" : {
-        "LogGroupName" : "UCPControllers",
-        "RetentionInDays" : 14
-      }
-    },
-    "DTRLogGroup"  : {
-    "Type" : "AWS::Logs::LogGroup",
-    "Properties" : {
-      "LogGroupName" : "DTRControllers",
-      "RetentionInDays" : 14
-    }
-  },
-  "SwarmLogGroup"  : {
-  "Type" : "AWS::Logs::LogGroup",
-  "Properties" : {
-    "LogGroupName" : "SwarmNodes",
-    "RetentionInDays" : 14
-  }
-},
+      "ControllerLogGroup": {
+          "Type": "AWS::Logs::LogGroup",
+          "Properties": {
+              "LogGroupName": {
+                  "Fn::Join": [
+                      "-", [{
+                              "Ref": "AWS::StackName"
+                          },
+                          "UCPControllers"
+                      ]
+                  ]
+              },
+              "RetentionInDays": 14
+          }
+      },
+      "DTRLogGroup": {
+          "Type": "AWS::Logs::LogGroup",
+          "Properties": {
+            "LogGroupName": {
+                "Fn::Join": [
+                    "-", [{
+                            "Ref": "AWS::StackName"
+                        },
+                        "DTRControllers"
+                    ]
+                ]
+            },
+              "RetentionInDays": 14
+          }
+      },
+      "SwarmLogGroup": {
+          "Type": "AWS::Logs::LogGroup",
+          "Properties": {
+            "LogGroupName": {
+                "Fn::Join": [
+                    "-", [{
+                            "Ref": "AWS::StackName"
+                        },
+                        "SwarmNodes"
+                    ]
+                ]
+            },
+              "RetentionInDays": 14
+          }
+      },
       "DDCBucket" : {
       "Type" : "AWS::S3::Bucket",
 	  "DeletionPolicy" : "Retain"
