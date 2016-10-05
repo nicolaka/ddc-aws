@@ -1239,7 +1239,7 @@
           }
         ],
         "HealthCheck": {
-          "Target": "TCP:12376",
+          "Target": "TCP:80",
           "HealthyThreshold": "2",
           "UnhealthyThreshold": "10",
           "Interval": "30",
@@ -1388,7 +1388,7 @@
               "",
               [
                 "#!/bin/bash\n",
-                "# Installing Docker \n",
+                "# Installing Docker and Compose \n",
                 "export USERNAME=admin\n",
                 "export PASSWORD=ddconaws\n",
                 "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
@@ -1399,7 +1399,9 @@
                 "echo $HOSTNAME | sudo tee  /etc/hostname \n",
                 "curl -sSL https://packages.docker.com/1.12/install.sh | sh \n",
                 "sudo usermod -aG docker ubuntu \n",
-                "export UCP_URL=https://",
+                "apt-get -y install python-pip \n",
+                "sudo pip install docker-compose \n",
+                "export UCP_CONTROLLER_IP=",
                 {
                   "Fn::GetAtt": [
                     "Controller",
@@ -1407,9 +1409,12 @@
                   ]
                 },
                 "\n",
-                "curl --insecure $UCP_URL/ca > ca.pem\n",
+                "curl --insecure https://$UCP_CONTROLLER_IP/ca > ca.pem\n",
                 "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
-                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n"
+                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join --url https://$UCP_CONTROLLER_IP --fingerprint $UCP_FINGERPRINT \n",
+                "echo 'Installing Interlock+NGINX' \n",
+                "wget https://raw.githubusercontent.com/nicolaka/interlock-lbs/master/docker-compose.yml \n",
+                "sudo -E docker-compose -p interlock-nginx-$HOSTNAME up -d \n"
               ]
             ]
           }
