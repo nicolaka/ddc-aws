@@ -1,4 +1,4 @@
-# Docker Datacenter on AWS 
+# Docker Datacenter on AWS
 
 **TL;DR One click deploy of highly-scalable, production-ready Docker Datacenter on AWS based on Docker and AWS best-practices**
 
@@ -9,9 +9,9 @@ Docker Datacenter is an integrated solution including open source and commercial
 
 ![](images/design_0.png)
 
-Docker Data Center is composed of two main components: Docker Universal Control Plane (UCP) and Docker Trusted Registry (DTR). [UCP](https://docs.docker.com/docker-trusted-registry/overview/) is an enterprise-grade cluster management solution from Docker that helps you manage your whole cluster from a single place. UCP is made of the UCP controllers and UCP nodes. 
+Docker Data Center is composed of two main components: Docker Universal Control Plane (UCP) and Docker Trusted Registry (DTR). [UCP](https://docs.docker.com/docker-trusted-registry/overview/) is an enterprise-grade cluster management solution from Docker that helps you manage your whole cluster from a single place. UCP is made of the UCP controllers and UCP nodes.
 
-[DTR](https://docs.docker.com/docker-trusted-registry/overview/) is the enterprise-grade image storage solution from Docker that helps you can securely store and manage the Docker images you use in your applications. DTR is made of DTR replicas only that are deployed on UCP nodes. 
+[DTR](https://docs.docker.com/docker-trusted-registry/overview/) is the enterprise-grade image storage solution from Docker that helps you can securely store and manage the Docker images you use in your applications. DTR is made of DTR replicas only that are deployed on UCP nodes.
 
 ## Architecture
 
@@ -28,7 +28,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 
 
 - Click on **Launch Stack**. This link will take you to AWS cloudformation portal.
-- Confirm your AWS Region that you'd like to launch this stack in ( top right corner)
+- Confirm your AWS Region that you'd like to launch this stack in ( top right corner), if you do not see your desired keypair confirm that the region selected is the correct one for that KeyPair
 - Provide the required parameters ( listed below ) and click **Next**
 - Confirm and Launch.
 - Once all done ( it does take between 20-30 mins), click on outputs tab to see the URLs of UCP/DTR, default username, and password, jumphost info, and S3 bucket name.
@@ -37,7 +37,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 **Required Paramters**
 
 - **KeyName**: Name of an existing EC2 KeyPair to enable SSH access to the instances
-- **HostedZone**: Route53 Public HostedZone ID to use. (e.g. Z2FDTNDATAQYW2). If you intend to use a Priavte HostedZone, you need to follow [this](https://github.com/nicolaka/ddc-aws/issues/41#issuecomment-229153959) workaround.
+- **HostedZone**: Route53 Public HostedZone ID to use. (e.g. Z2FDTNDATAQYW2). If you intend to use a Private HostedZone, you need to follow [this](https://github.com/nicolaka/ddc-aws/issues/41#issuecomment-229153959) workaround.
 - **UCPFQDN**: FQDN, including subdomain, for UCP (e.g. ucp.example.com). Must be subdomain of selected Route53 HostedZone
 - **DTRFQDN**: FQDN, including subdomain, for DTR (e.g. dtr.example.com). Must be subdomain of selected Route53 HostedZone
 - **APPFQDN**: FQDN, including subdomain, for the applications' ELB (e.g. *.app.example.com). Must be subdomain of selected Route53 HostedZone.
@@ -45,7 +45,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 - **DTRInstanceType**: AWS EC2 Instance Type for DTR Replicas Only. Minimum required is **m3.medium**
 - **UCPNodesInstanceType**: AWS EC2 Instance Type for UCP nodes
 - **ClusterSize**: Number of UCP nodes (3-64)
-- **License**: Docker Datacenter License (copy+past it in JSON format or URL to download it). You can easily get trial license [here](https://hub.docker.com/enterprise/trial/)
+- **License**: Docker Datacenter License (copy+past it in JSON format or URL to download it). You can easily get a trial license [here](https://hub.docker.com/enterprise/trial/)
 - **RootVolumeSize**: Root filesystem size in GB. This will be used for all instances ( UCP Controllers, UCP Nodes, and DTR Nodes)
 
 **Key Functionalities**
@@ -57,11 +57,11 @@ The AWS Cloudformation starts the installation process by creating all the requi
 - Creates a DNS record and attaches it to UCP ELB
 - Deploys a scalable cluster of UCP nodes
 - Backs up UCP Root CAs to S3
-- Create a 3 DTR Replicas across multiple AZs within your VPC
-- Creates a DTR with preconfigured healthchecks
+- Create 3 DTR Replicas across multiple AZs within your VPC
+- Creates a DTR with preconfigured healthchecks, note that it will be necessary to run a container that responds to the health check from the ELB to be able to use the UCP nodes
 - Creates a DNS record and attaches it to DTR ELB
 - Creates a jumphost ec2 instance to be able to ssh to the DDC nodes
-- Creates a UCP Nodes ELB with preconfigured healthchecks (TCP Port 80). This can be used for your application that are deployed on UCP. 
+- Creates a UCP Nodes ELB with preconfigured healthchecks (TCP Port 80). This can be used for your application that are deployed on UCP.
 
 **Software Versions**
 
@@ -74,15 +74,15 @@ The AWS Cloudformation starts the installation process by creating all the requi
 
 - UCP and DTR default username and password are `admin/ddconaws`. **PLEASE CHANGE PASSWORD in UCP portal!!**. To change the password, go to the UCP portal, under `Users and Teams`, click on edit button for the `admin` user. From there you can update the admin account password.
 - External Certs: Both UCP and DTR are installed with self-signed certs today. If you wish to use your own certs, you can do so by following the UCP and DTR configuration guides. Full UCP and DTR Configuration guides are found [here](https://docs.docker.com/ucp/configuration/use-externally-signed-certs/) and [here](https://docs.docker.com/docker-trusted-registry/configure/configuration/).
--  A Single Security Group is used in this setup. The security group only allows HTTP,HTTPS, and SSH traffic from external IPs. Security group doesn't limit any traffic from within the cluster. Please adjust it as needed. 
-- SSH: If you need to SSH into the cluster you can do so by using [SSH agent forwarding](https://developer.github.com/guides/using-ssh-agent-forwarding/) and ssh'ing into the jumphost node using the selected private key. Once you're logged into the jumphost, you can use the private IP address of any of the other nodes to ssh into them. 
+-  A Single Security Group is used in this setup. The security group only allows HTTP,HTTPS, and SSH traffic from external IPs. Security group doesn't limit any traffic from within the cluster. Please adjust it as needed.
+- SSH: If you need to SSH into the cluster you can do so by using [SSH agent forwarding](https://developer.github.com/guides/using-ssh-agent-forwarding/) and ssh'ing into the jumphost node using the selected private key. Once you're logged into the jumphost, you can use the private IP address of any of the other nodes to ssh into them.
 - Default username for `ubuntu` based AMI's is `ubuntu`.
-- Supported AWS Regions: 
+- Supported AWS Regions:
 	- us-east-1
 	- us-west-2
 	- us-west-1
 	- eu-west-1
-	- eu-central-1 
+	- eu-central-1
 	- ap-northeast-1
 	- ap-southeast-1
 	- ap-southeast-2
@@ -93,7 +93,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 - **My AWS Cloudformation is failing to launch. How should I do ?**
 
 1. Open an issue in this repo after checking that it doesn't already exist.
-2. Make sure you capture the stack events and parameters provided. 
+2. Make sure you capture the stack events and parameters provided.
 3. Make sure you capture the cloudformation stack ID.
 4. If you know which instance is failing, ssh into the instance( via the jumphost instance) and capture the following:
 
@@ -114,12 +114,3 @@ You can obtain trial license quickly and easily by going to [here](https://store
 **Cloudformation Test Results**
 
 ![](images/v1.1_rest_results.png)
-
-
-
-
-
-
-
-
-
