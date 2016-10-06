@@ -2318,7 +2318,7 @@
         "Fn::Join": [
           "",
           [
-            "https://",
+            "http://",
             {
               "Fn::GetAtt": [
                 "UCPNodesElasticLoadBalancer",
