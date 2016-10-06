@@ -31,16 +31,13 @@ The AWS Cloudformation starts the installation process by creating all the requi
 - Confirm your AWS Region that you'd like to launch this stack in ( top right corner)
 - Provide the required parameters ( listed below ) and click **Next**
 - Confirm and Launch.
-- Once all done ( it does take between 20-30 mins), click on outputs tab to see the URLs of UCP/DTR, default username, and password, jumphost info, and S3 bucket name.
+- Once all done ( it does take between 20-30 mins), click on outputs tab to see the URLs of UCP/DTR, default username and password, and jumphost info.
 
 
 **Required Paramters**
 
 - **KeyName**: Name of an existing EC2 KeyPair to enable SSH access to the instances
-- **HostedZone**: Route53 Public HostedZone ID to use. (e.g. Z2FDTNDATAQYW2). If you intend to use a Priavte HostedZone, you need to follow [this](https://github.com/nicolaka/ddc-aws/issues/41#issuecomment-229153959) workaround.
-- **UCPFQDN**: FQDN, including subdomain, for UCP (e.g. ucp.example.com). Must be subdomain of selected Route53 HostedZone
-- **DTRFQDN**: FQDN, including subdomain, for DTR (e.g. dtr.example.com). Must be subdomain of selected Route53 HostedZone
-- **APPFQDN**: FQDN, including subdomain, for the applications' ELB (e.g. *.app.example.com). Must be subdomain of selected Route53 HostedZone.
+- **UCPFQDN**: Intended FQDN for UCP used to self-sign a cert with domain name. 
 - **UCPControllersInstanceType**: AWS EC2 Instance Type for UCP Controllers only. Minimum required is **m3.medium**
 - **DTRInstanceType**: AWS EC2 Instance Type for DTR Replicas Only. Minimum required is **m3.medium**
 - **UCPNodesInstanceType**: AWS EC2 Instance Type for UCP nodes
@@ -51,23 +48,22 @@ The AWS Cloudformation starts the installation process by creating all the requi
 **Key Functionalities**
 
 - Create a New VPC, Private and Public Subnets in different AZs, ELBs, NAT Gateways, Internet Gateways, AutoScaling Groups- all based on AWS best practices
-- Creates an S3 bucket for DDC to be used for cert backup and DTR image storage ( requires additional configuration in DTR )
+- Creates and configures an S3 bucket for DDC to be used for cert backup and DTR image storage
 - Deploys 3 UCP Controllers across multiple AZs  within your VPC
 - Creates a UCP ELB with preconfigured HTTP healthchecks
-- Creates a DNS record and attaches it to UCP ELB
 - Deploys a scalable cluster of UCP nodes
 - Backs up UCP Root CAs to S3
 - Create a 3 DTR Replicas across multiple AZs within your VPC
 - Creates a DTR with preconfigured healthchecks
-- Creates a DNS record and attaches it to DTR ELB
 - Creates a jumphost ec2 instance to be able to ssh to the DDC nodes
 - Creates a UCP Nodes ELB with preconfigured healthchecks (TCP Port 80). This can be used for your application that are deployed on UCP. 
+- Deploys NGINX+Interlock to dynamically register your application containers. Please see FAQ for more details on launching your application. 
 
 **Software Versions**
 
 - EC2 instances use Ubuntu 14.04 LTS AMI
-- Docker Commercially Supported Engine 1.11
-- UCP 1.1.2
+- Docker Commercially Supported Engine 1.12
+- UCP 1.1.4
 - DTR 2.0.3
 
 **Notes and Caveats**
@@ -101,6 +97,31 @@ The AWS Cloudformation starts the installation process by creating all the requi
 /var/log/cloud-init-output.log
 /var/lib/cloud/instance/scripts/part-001
 ```
+- **How can I deploy my application on Docker Datacenter?**
+
+It is easy to deploy a your Docker applications on Docker Datacenter. You can launch your applications from CLI (instruction [here](https://docs.docker.com/ucp/applications/deploy-app-cli/)) or UCP portal (instruction [here](https://docs.docker.com/ucp/applications/deploy-app-ui/)).
+
+- **How can I access my application on Docker Datacenter?**
+
+If you wish to access your application using a DNS name, you need to do two things:
+
+1. Create a DNS record (A or CNAME) for your application using the APP ELB that gets created. The APP ELB load-balances traffic across all UCP worker nodes that have NGINX running which automatically get updated when you launch your application.
+
+2. Launch your application with `interlock` labels. Note: Interlock+NGINX are already deployed as part of the Cloudformation template. 
+
+For example, to access a Compose app using `app.example.com`, you first need to create a DNS record for it using the APP ELB's DNS name/IP then launch it with following labels:
+
+```
+app:
+    image: ehazlett/docker-demo:latest
+    ports:
+        - 8080
+    labels:
+        - "interlock.hostname=app"
+        - "interlock.domain=example.com"
+```
+
+More details on interlock can be found [here](https://github.com/ehazlett/interlock). 
 
 
 - **What's the support model for Docker Datacenter on AWS ?**
