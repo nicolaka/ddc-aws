@@ -17,7 +17,7 @@ Docker Data Center is composed of two main components: Docker Universal Control 
 
 ![](images/design_3.png)
 
-The AWS Cloudformation starts the installation process by creating all the required AWS resources such as the VPC, security groups, public and private subnets, internet gateways, NAT gateways, and S3 bucket. It then launches the first UCP controller instance and goes through the installation process of Docker engine and UCP containers. It backs the Root CAs created by the first UCP controllers to S3. Once the first UCP controller is up and running, the process of creating the other UCP controllers, the UCP cluster nodes, and the first DTR replica is triggered. Similar to the first UCP controller node, all other nodes are started by installing Docker Commercially Supported engine, followed by running the UCP and DTR containers to join the cluster. Three ELBs, one for UCP, one for DTR and a third for your application, are launched and automatically configured to provide resilient loadbalancing across the two AZs. Additionally, UCP controllers and nodes are launched in an ASG to provide scaling functionality if needed. This architecture ensures that both UCP and DTR instances are spread across both AZs to ensure resiliency and high-availability. Route53 is used to automatically register and configure UCP,DTR, and an application FQDN to their respective ELBs in your public HostedZone.
+The AWS Cloudformation starts the installation process by creating all the required AWS resources such as the VPC, security groups, public and private subnets, internet gateways, NAT gateways, and S3 bucket. It then launches the first UCP controller instance and goes through the installation process of Docker engine and UCP containers. It backs the Root CAs created by the first UCP controllers to S3. Once the first UCP controller is up and running, the process of creating the other UCP controllers, the UCP cluster nodes, and the first DTR replica is triggered. Similar to the first UCP controller node, all other nodes are started by installing Docker Commercially Supported engine, followed by running the UCP and DTR containers to join the cluster. Three ELBs, one for UCP, one for DTR and a third for your application, are launched and automatically configured to provide resilient loadbalancing across the two AZs. Additionally, UCP controllers and nodes are launched in an ASG to provide scaling functionality if needed. This architecture ensures that both UCP and DTR instances are spread across both AZs to ensure resiliency and high-availability. UCP worker nodes are launched with `interlock` and `nginx` to dynamically register your deployed applications. 
 
 
 ![](images/design_2.png)
@@ -42,7 +42,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 - **DTRInstanceType**: AWS EC2 Instance Type for DTR Replicas Only. Minimum required is **m3.medium**
 - **UCPNodesInstanceType**: AWS EC2 Instance Type for UCP nodes
 - **ClusterSize**: Number of UCP nodes (3-64)
-- **License**: Docker Datacenter License (copy+past it in JSON format or URL to download it). You can easily get trial license [here](https://hub.docker.com/enterprise/trial/)
+- **License**: Docker Datacenter License (copy+past it in JSON format or URL to download it). You can easily get trial license [here](https://store.docker.com/bundles/docker-datacenter)
 - **RootVolumeSize**: Root filesystem size in GB. This will be used for all instances ( UCP Controllers, UCP Nodes, and DTR Nodes)
 
 **Key Functionalities**
@@ -97,6 +97,10 @@ The AWS Cloudformation starts the installation process by creating all the requi
 /var/log/cloud-init-output.log
 /var/lib/cloud/instance/scripts/part-001
 ```
+
+5. Open an issue with Docker Support by emailing support@docker.com
+
+
 - **How can I deploy my application on Docker Datacenter?**
 
 It is easy to deploy a your Docker applications on Docker Datacenter. You can launch your applications from CLI (instruction [here](https://docs.docker.com/ucp/applications/deploy-app-cli/)) or UCP portal (instruction [here](https://docs.docker.com/ucp/applications/deploy-app-ui/)).
