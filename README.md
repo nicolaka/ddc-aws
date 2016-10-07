@@ -34,7 +34,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 - Once all done ( it does take between 20-30 mins), click on outputs tab to see the URLs of UCP/DTR, default username, and password, jumphost info, and S3 bucket name.
 
 
-**Required Paramters**
+**Required Parameters**
 
 - **KeyName**: Name of an existing EC2 KeyPair to enable SSH access to the instances
 - **HostedZone**: Route53 Public HostedZone ID to use. (e.g. Z2FDTNDATAQYW2). If you intend to use a Private HostedZone, you need to follow [this](https://github.com/nicolaka/ddc-aws/issues/41#issuecomment-229153959) workaround.
@@ -109,6 +109,14 @@ The solution provided is based on Docker and AWS best practices and therefore th
 - **How can I obtain Docker Datacenter license?**
 
 You can obtain trial license quickly and easily by going to [here](https://store.docker.com/bundles/docker-datacenter). If you're interested in buying Docker Datacenter subscription please contact Docker [here](https://goto.docker.com/contact-us.html).
+
+- **I don't see my desired keypair for launching the instances.**
+
+Confirm that the keypair you want to use is available in the region that is selected.
+
+- **The UCP ELB does not show any healthy nodes.**
+
+The default UCP ELB healthcheck uses tcp port 80 which is a placeholder only. To have the UCP nodes respond to the healthcheck deploy `interlock-nginx` from [https://github.com/nicolaka/interlock-lbs/](https://github.com/nicolaka/interlock-lbs/) to each node. This container will respond to requests on port 80. You may want to use a different port if you have other services that require it.
 
 **Cloudformation Test Results**
 
