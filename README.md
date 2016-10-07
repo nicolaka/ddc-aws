@@ -28,7 +28,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 
 
 - Click on **Launch Stack**. This link will take you to AWS cloudformation portal.
-- Confirm your AWS Region that you'd like to launch this stack in ( top right corner), if you do not see your desired keypair confirm that the region selected is the correct one for that KeyPair
+- Confirm your AWS Region that you'd like to launch this stack in ( top right corner), note that the region selection also affects your desired keypair used later when launching the instances
 - Provide the required parameters ( listed below ) and click **Next**
 - Confirm and Launch.
 - Once all done ( it does take between 20-30 mins), click on outputs tab to see the URLs of UCP/DTR, default username, and password, jumphost info, and S3 bucket name.
@@ -53,15 +53,14 @@ The AWS Cloudformation starts the installation process by creating all the requi
 - Create a New VPC, Private and Public Subnets in different AZs, ELBs, NAT Gateways, Internet Gateways, AutoScaling Groups- all based on AWS best practices
 - Creates an S3 bucket for DDC to be used for cert backup and DTR image storage ( requires additional configuration in DTR )
 - Deploys 3 UCP Controllers across multiple AZs  within your VPC
-- Creates a UCP ELB with preconfigured HTTP healthchecks
+- Creates a UCP ELB with preconfigured HTTP healthchecks, note that it will be necessary on each UCP node for you to run a container that responds to the health check from the ELB to be able to use the UCP nodes via the ELB
 - Creates a DNS record and attaches it to UCP ELB
 - Deploys a scalable cluster of UCP nodes
 - Backs up UCP Root CAs to S3
 - Create 3 DTR Replicas across multiple AZs within your VPC
-- Creates a DTR with preconfigured healthchecks, note that it will be necessary to run a container that responds to the health check from the ELB to be able to use the UCP nodes
+- Creates a DTR with preconfigured healthchecks
 - Creates a DNS record and attaches it to DTR ELB
 - Creates a jumphost ec2 instance to be able to ssh to the DDC nodes
-- Creates a UCP Nodes ELB with preconfigured healthchecks (TCP Port 80). This can be used for your application that are deployed on UCP.
 
 **Software Versions**
 
