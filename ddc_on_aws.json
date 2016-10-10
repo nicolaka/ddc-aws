@@ -1058,6 +1058,7 @@
                 "sudo sed -i 's/localhost/ucp-controller/g' /etc/hosts \n",
                 "echo $HOSTNAME | sudo tee  /etc/hostname \n",
                 "curl -sSL https://packages.docker.com/1.12/install.sh | sh \n",
+                "sudo usermod -aG docker ubuntu \n",
                 "echo 'Install CFN-helper + other packages' ",
                 "apt-get -y install python-pip unzip ntp",
                 "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
