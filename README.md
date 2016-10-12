@@ -23,7 +23,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 
 ![](images/design_2.png)
 
-## How to Launch
+## How to Launch Latest Release([v1.3](https://github.com/nicolaka/ddc-aws/releases/tag/v1.3))
 
 [![Docker Datacenter on AWS](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?#/stacks/new?stackName=DockerDatacenter&templateURL=https://s3-us-west-2.amazonaws.com/ddc-on-aws-public/ddc_on_aws.json)
 
@@ -137,9 +137,10 @@ The solution provided is based on Docker and AWS best practices and therefore th
 
 You can obtain trial license quickly and easily by going to [here](https://store.docker.com/bundles/docker-datacenter). If you're interested in buying Docker Datacenter subscription please contact Docker [here](https://goto.docker.com/contact-us.html).
 
-**Cloudformation Test Results**
+**Version 1.3 Cloudformation Test Results**
 
-![](images/v1.1_rest_results.png)
+![](images/v1.3_test_results.png)
+
 
 
 
