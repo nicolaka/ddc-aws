@@ -968,11 +968,27 @@
                 }
               ]
             }
+          },
+          {
+            "PolicyName": "AWSLogs",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
           }
         ]
       }
     },
-    "ControllerProfile": {
+    "UCPProfile": {
       "Type": "AWS::IAM::InstanceProfile",
       "Properties": {
         "Path": "/",
@@ -1079,6 +1095,11 @@
                       "export PASSWORD=ddconaws\n",
                       "export PRIVATE_IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
                       "echo \"Loading License\" \n",
+                      "export LOGGROUP=",
+                      {
+                        "Ref": "LogGroup"
+                      },
+                      "\n",
                       "INPUT='",
                       {
                         "Ref": "License"
@@ -1093,7 +1114,7 @@
                       "curl -s $INPUT >>/home/ubuntu/docker_subscription.lic \n",
                       "else echo \"License input must be a valid s3 location or json license key\" \n",
                       "fi \n",
-                      "sudo docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=$PASSWORD --name ucp docker/ucp:1.1.4 install --debug --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
+                      "sudo docker run --rm --log-driver=awslogs --log-opt awslogs-group=$LOGGROUP -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/docker_subscription.lic:/docker_subscription.lic -e UCP_ADMIN_PASSWORD=$PASSWORD --name ucp docker/ucp:1.1.4 install --debug --host-address $PRIVATE_IP --san $PRIVATE_IP --san ",
                       {
                         "Ref": "UCPFQDN"
                       },
@@ -1158,7 +1179,7 @@
           }
         },
         "IamInstanceProfile": {
-          "Ref": "ControllerProfile"
+          "Ref": "UCPProfile"
         },
         "Tags": [
           {
@@ -1346,6 +1367,9 @@
         "InstanceType": {
           "Ref": "UCPNodesInstanceType"
         },
+        "IamInstanceProfile": {
+          "Ref": "UCPProfile"
+        },
         "KeyName": {
           "Ref": "KeyName"
         },
@@ -1410,9 +1434,14 @@
                   ]
                 },
                 "\n",
+                "export LOGGROUP=",
+                {
+                  "Ref": "LogGroup"
+                },
+                "\n",
                 "curl --insecure https://$UCP_CONTROLLER_IP/ca > ca.pem\n",
                 "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
-                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join --url https://$UCP_CONTROLLER_IP --fingerprint $UCP_FINGERPRINT \n",
+                "sudo -E docker run --rm --log-driver=awslogs --log-opt awslogs-group=$LOGGROUP -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join --url https://$UCP_CONTROLLER_IP --fingerprint $UCP_FINGERPRINT \n",
                 "echo 'Installing Interlock+NGINX' \n",
                 "wget https://raw.githubusercontent.com/nicolaka/interlock-lbs/master/docker-compose.yml \n",
                 "sudo -E docker-compose -p interlock-nginx-$HOSTNAME up -d \n"
@@ -1479,7 +1508,7 @@
           "Ref": "UCPControllersInstanceType"
         },
         "IamInstanceProfile": {
-          "Ref": "ControllerProfile"
+          "Ref": "UCPProfile"
         },
         "KeyName": {
           "Ref": "KeyName"
@@ -1543,6 +1572,11 @@
                 "curl \"https://s3.amazonaws.com/aws-cli/awscli-bundle.zip\" -o \"awscli-bundle.zip\" \n",
                 "unzip awscli-bundle.zip \n",
                 "./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws \n",
+                "export LOGGROUP=",
+                {
+                  "Ref": "LogGroup"
+                },
+                "\n",
                 "export UCP_URL=https://",
                 {
                   "Fn::GetAtt": [
@@ -1555,7 +1589,7 @@
                 "export PASSWORD=ddconaws\n",
                 "curl --insecure $UCP_URL/ca > ca.pem\n",
                 "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
-                "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join  --replica  --url $UCP_URL --fingerprint $UCP_FINGERPRINT --san ",
+                "sudo -E docker run --rm --log-driver=awslogs --log-opt awslogs-group=$LOGGROUP -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join  --replica  --url $UCP_URL --fingerprint $UCP_FINGERPRINT --san ",
                 {
                   "Ref": "UCPFQDN"
                 },
@@ -1734,10 +1768,15 @@
                         "Ref": "AWS::Region"
                       },
                       "\n",
+                      "export LOGGROUP=",
+                      {
+                        "Ref": "LogGroup"
+                      },
+                      "\n",
                       "curl --insecure $UCP_URL/ca > ca.pem\n",
                       "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
                       "# Installing UCP Node\n",
-                      "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join --debug --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
+                      "sudo -E docker run --rm --log-driver=awslogs --log-opt awslogs-group=$LOGGROUP -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join --debug --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
                       "#Register instance with ELB\n",
                       "INSTANCE=\"$(curl 169.254.169.254/latest/meta-data/instance-id)\"\n",
                       "aws elb register-instances-with-load-balancer --load-balancer-name ",
@@ -1749,7 +1788,7 @@
                       "\n",
                       "# Installing DTR Replica\n",
                       "sleep 60 \n",
-                      "sudo -E docker run --rm -i docker/dtr:2.0.3 install --debug --ucp-url https://$UCP_ELB_DNS --ucp-node  dtr-replica-01 --dtr-external-url $DTR_ELB_DNS:443 --ucp-username $USERNAME --ucp-password $PASSWORD --ucp-insecure-tls --replica-id 000000000001 \n",
+                      "sudo -E docker run --rm --log-driver=awslogs --log-opt awslogs-group=$LOGGROUP -i docker/dtr:2.0.3 install --debug --ucp-url https://$UCP_ELB_DNS --ucp-node  dtr-replica-01 --dtr-external-url $DTR_ELB_DNS:443 --ucp-username $USERNAME --ucp-password $PASSWORD --ucp-insecure-tls --replica-id 000000000001 \n",
                       "# Wait Handle: DTR tests itself to ensure it's responding before signaling CFN. Try in an infinite loop. Wait Handle will tear down stack if timeout exceeded\n",
                       "# Defining function:\n",
                       "checkcontroller()\n",
@@ -1830,6 +1869,22 @@
                   "Effect": "Allow",
                   "Action": [
                     "s3:*"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "AWSLogs",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
                   ],
                   "Resource": "*"
                 }
@@ -1969,13 +2024,18 @@
                         ]
                       },
                       "\n",
+                      "export LOGGROUP=",
+                      {
+                        "Ref": "LogGroup"
+                      },
+                      "\n",
                       "curl --insecure $UCP_URL/ca > ca.pem\n",
                       "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
                       "# Installing UCP Node\n",
-                      "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join --debug --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
+                      "sudo -E docker run --rm --log-driver=awslogs --log-opt awslogs-group=$LOGGROUP -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join --debug --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
                       "# Installing DTR Replica\n",
                       "sleep 60 \n",
-                      "sudo -E docker run --rm -i docker/dtr:2.0.3 join --debug --ucp-url https://$UCP_ELB_DNS --ucp-node  dtr-replica-02 --ucp-username $USERNAME --ucp-password $PASSWORD --ucp-insecure-tls --replica-id 000000000002 --existing-replica-id 000000000001 \n",
+                      "sudo -E docker run --rm --log-driver=awslogs --log-opt awslogs-group=$LOGGROUP -i docker/dtr:2.0.3 join --debug --ucp-url https://$UCP_ELB_DNS --ucp-node  dtr-replica-02 --ucp-username $USERNAME --ucp-password $PASSWORD --ucp-insecure-tls --replica-id 000000000002 --existing-replica-id 000000000001 \n",
                       "# Wait Handle: DTR tests itself to ensure it's responding before signaling CFN. Try in an infinite loop. Wait Handle will tear down stack if timeout exceeded\n",
                       "# Defining function:\n",
                       "checkcontroller()\n",
@@ -2149,13 +2209,18 @@
                         ]
                       },
                       "\n",
+                      "export LOGGROUP=",
+                      {
+                        "Ref": "LogGroup"
+                      },
+                      "\n",
                       "curl --insecure $UCP_URL/ca > ca.pem\n",
                       "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
                       "# Installing UCP Node\n",
-                      "sudo -E docker run --rm -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join --debug --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
+                      "sudo -E docker run --rm --log-driver=awslogs --log-opt awslogs-group=$LOGGROUP -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join --debug --url $UCP_URL --fingerprint $UCP_FINGERPRINT \n",
                       "# Installing DTR Replica\n",
                       "sleep 60 \n",
-                      "sudo -E docker run --rm -i docker/dtr:2.0.3 join --debug --ucp-url https://$UCP_ELB_DNS --ucp-node dtr-replica-03 --ucp-username $USERNAME --ucp-password $PASSWORD --ucp-insecure-tls --replica-id 000000000003 --existing-replica-id 000000000001 \n",
+                      "sudo -E docker run --rm --log-driver=awslogs --log-opt awslogs-group=$LOGGROUP -i docker/dtr:2.0.3 join --debug --ucp-url https://$UCP_ELB_DNS --ucp-node dtr-replica-03 --ucp-username $USERNAME --ucp-password $PASSWORD --ucp-insecure-tls --replica-id 000000000003 --existing-replica-id 000000000001 \n",
                       "#Register instance with ELB\n",
                       "INSTANCE=\"$(curl 169.254.169.254/latest/meta-data/instance-id)\"\n",
                       "aws elb register-instances-with-load-balancer --load-balancer-name ",
@@ -2263,6 +2328,13 @@
             }
           }
         ]
+      }
+    },
+    "LogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "DDCLogGroup",
+        "RetentionInDays": 14
       }
     }
   },
