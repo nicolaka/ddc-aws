@@ -1433,11 +1433,12 @@
                     "PrivateIp"
                   ]
                 },
-                "\n",                
+                "\n",
                 "export LOGGROUP=",
                 {
                   "Ref": "LogGroup"
                 },
+                "\n",
                 "curl --insecure https://$UCP_CONTROLLER_IP/ca > ca.pem\n",
                 "export UCP_FINGERPRINT=$(openssl x509 -in ca.pem -noout -sha256 -fingerprint | awk -F= '{ print $2 }' )\n",
                 "sudo -E docker run --rm --log-driver=awslogs --log-opt awslogs-group=$LOGGROUP -i --name ucp -e UCP_ADMIN_USER=$USERNAME -e UCP_ADMIN_PASSWORD=$PASSWORD -v /var/run/docker.sock:/var/run/docker.sock docker/ucp:1.1.4 join --url https://$UCP_CONTROLLER_IP --fingerprint $UCP_FINGERPRINT \n",
