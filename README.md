@@ -59,6 +59,7 @@ The AWS Cloudformation starts the installation process by creating all the requi
 - Creates a jumphost ec2 instance to be able to ssh to the DDC nodes
 - Creates a UCP Nodes ELB with preconfigured healthchecks (TCP Port 80). This can be used for your application that are deployed on UCP. 
 - Deploys NGINX+Interlock to dynamically register your application containers. Please see FAQ for more details on launching your application. 
+- Creates a Cloudwatch Log Group (called `DDCLogGroup`)and allows log streams from DDC instances. It also automatically logs the UCP and DTR installation containers. 
 
 **Software Versions**
 
@@ -92,15 +93,13 @@ The AWS Cloudformation starts the installation process by creating all the requi
 1. Open an issue in this repo after checking that it doesn't already exist.
 2. Make sure you capture the stack events and parameters provided. 
 3. Make sure you capture the cloudformation stack ID.
-4. If you know which instance is failing, ssh into the instance( via the jumphost instance) and capture the following:
+4. Open an issue with Docker Support by emailing support@docker.com
+5. If you know which instance is failing, ssh into the instance( via the jumphost instance) and capture the following:
 
 ```
 /var/log/cloud-init-output.log
 /var/lib/cloud/instance/scripts/part-001
 ```
-
-5. Open an issue with Docker Support by emailing support@docker.com
-
 
 - **How can I deploy my application on Docker Datacenter?**
 
@@ -128,7 +127,10 @@ app:
 
 More details on interlock can be found [here](https://github.com/ehazlett/interlock). 
 
+- **How can I send container logs to Cloudwatch ?**
 
+Run your container with the following Docker run options `--log-driver=awslogs --log-opt awslogs-group=DDCLogGroup` and you should see your container logs in AWS's Log Group. 
+ 
 - **What's the support model for Docker Datacenter on AWS ?**
 
 The solution provided is based on Docker and AWS best practices and therefore the Docker Dataceter components of the solution are commercially supported by Docker  while the AWS components are supported by AWS. If you are facing any issues related to launching the solution please open issues here on Github. If the issues your'e facing are related to Docker Datacenter components please contact Docker support. If the issues your'e facing are related to AWS specifically, please contact AWS support.
