@@ -1803,9 +1803,7 @@
                       "fi\n",
                       "}\n",
                       "# Calling function:\n",
-                      "checkcontroller\n",
-                      "echo 'Configuring Storage Backend with S3' \n",
-                      "docker run --rm -e DTR_ELB_DNS=$DTR_ELB_DNS -e S3_BUCKET_NAME=$S3_BUCKET_NAME -e REGION=$REGION -e USERNAME=$USERNAME -e PASSWORD=$PASSWORD nicolaka/dtrs3config:dfa194f845024afdb3b148ec6048ff05"
+                      "checkcontroller\n"
                     ]
                   ]
                 }
@@ -2209,9 +2207,19 @@
                         ]
                       },
                       "\n",
+                      "export S3_BUCKET_NAME=",
+                      {
+                        "Ref": "DDCBucket"
+                      },
+                      "\n",
                       "export LOGGROUP=",
                       {
                         "Ref": "LogGroup"
+                      },
+                      "\n",
+                      "export REGION=",
+                      {
+                        "Ref": "AWS::Region"
                       },
                       "\n",
                       "curl --insecure $UCP_URL/ca > ca.pem\n",
@@ -2231,7 +2239,10 @@
                       " --region ",
                       {
                         "Ref": "AWS::Region"
-                      }
+                      },
+                      "\n",
+                      "echo 'Configuring Storage Backend with S3' \n",
+                      "docker run --rm -e DTR_ELB_DNS=$DTR_ELB_DNS -e S3_BUCKET_NAME=$S3_BUCKET_NAME -e REGION=$REGION -e USERNAME=$USERNAME -e PASSWORD=$PASSWORD nicolaka/dtrs3config:dfa194f845024afdb3b148ec6048ff05"
                     ]
                   ]
                 }
