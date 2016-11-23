@@ -25,14 +25,56 @@ The AWS Cloudformation starts the installation process by creating all the requi
 
 ## How to Launch Latest Release([v1.3](https://github.com/nicolaka/ddc-aws/releases/tag/v1.3))
 
-[![Docker Datacenter on AWS](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?#/stacks/new?stackName=DockerDatacenter&templateURL=https://s3-us-west-2.amazonaws.com/ddc-on-aws-public/ddc_on_aws.json)
+You can launch the Cloudformation template using the AWS Console or using the AWS CLI as follows:
 
+**1) AWS Console:**
 
-- Click on **Launch Stack**. This link will take you to AWS cloudformation portal.
+- Click on **Launch Stack** below. This link will take you to AWS cloudformation portal.
 - Confirm your AWS Region that you'd like to launch this stack in ( top right corner)
 - Provide the required parameters ( listed below ) and click **Next**
 - Confirm and Launch.
-- Once all done ( it does take between 20-30 mins), click on outputs tab to see the URLs of UCP/DTR, default username and password, and jumphost info.
+- Once all done ( it does take between 20-30 mins), click on outputs tab to see the URLs of UCP/DTR, default username and password, and jumphost info
+
+[![Docker Datacenter on AWS](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?#/stacks/new?stackName=DockerDatacenter&templateURL=https://s3-us-west-2.amazonaws.com/ddc-on-aws-public/ddc_on_aws.json)
+
+
+**2) AWS CLI:**
+
+
+- Upload your Docker Datacenter license to an S3 bucket.
+- Run the following Docker container from your local or dev environment:
+
+	```
+docker run --env AWS_ACCESS_KEY_ID=<AWS_ACCESS_KEY_ID> \
+--env AWS_SECRET_ACCESS_KEY=<AWS_SECRET_ACCESS_KEY> \
+--env AWS_DEFAULT_REGION=<AWS_REGION> \
+garland/aws-cli-docker aws cloudformation create-stack \
+--stack-name <STACK_NAME> \
+--capabilities CAPABILITY_IAM \
+--template-url https://s3-us-west-2.amazonaws.com/ddc-on-aws-public/ddc_on_aws.json \
+--parameters \
+ParameterKey=KeyName,ParameterValue=<SSH_KEY_NAME> \
+ParameterKey=RootVolumeSize,ParameterValue=<ROOT_VOLUME_SIZE> \
+ParameterKey=UCPFQDN,ParameterValue=<UCP_FQDN> \
+ParameterKey=UCPControllersInstanceType,ParameterValue=<INSTANCE_TYPE> \
+ParameterKey=DTRInstanceType,ParameterValue=<INSTANCE_TYPE> \
+ParameterKey=UCPNodesInstanceType,ParameterValue=<INSTANCE_TYPE> \
+ParameterKey=ClusterSize,ParameterValue=<CLUSTER_SIZE> \
+ParameterKey=License,ParameterValue=<YOUR_DDC_LICENSE_S3_URL>
+	```
+
+- Once all done ( it does take between 20-30 mins), you can get stack outputs such as UCP and DTR URLs directly from CLI as follows:
+
+
+	```
+docker run --env AWS_ACCESS_KEY_ID=<AWS_ACCESS_KEY_ID> \
+--env AWS_SECRET_ACCESS_KEY=<AWS_SECRET_ACCESS_KEY> \
+--env AWS_DEFAULT_REGION=<AWS_REGION> \
+garland/aws-cli-docker aws cloudformation describe-stacks --stack-name <STACK_NAME>
+
+	```
+
+- Full documentation for using `aws-cli` can be found [here](http://docs.aws.amazon.com/cli/latest/reference/cloudformation/).
 
 
 **Required Paramters**
