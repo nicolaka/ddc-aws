@@ -1,5 +1,7 @@
 # Docker Datacenter on AWS 
 
+### This project is not maintained anymore. The maintained version is [here](https://docs.docker.com/datacenter/install/aws/).
+
 **TL;DR One click deploy of highly-scalable, production-ready Docker Datacenter on AWS based on Docker and AWS best-practices**
 
 
