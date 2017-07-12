@@ -68,13 +68,12 @@ ParameterKey=License,ParameterValue=<YOUR_DDC_LICENSE_S3_URL>
 - Once all done ( it does take between 20-30 mins), you can get stack outputs such as UCP and DTR URLs directly from CLI as follows:
 
 
-	```
+```
 docker run --env AWS_ACCESS_KEY_ID=<AWS_ACCESS_KEY_ID> \
 --env AWS_SECRET_ACCESS_KEY=<AWS_SECRET_ACCESS_KEY> \
 --env AWS_DEFAULT_REGION=<AWS_REGION> \
 garland/aws-cli-docker aws cloudformation describe-stacks --stack-name <STACK_NAME>
-
-	```
+```
 
 - Full documentation for using `aws-cli` can be found [here](http://docs.aws.amazon.com/cli/latest/reference/cloudformation/).
 
