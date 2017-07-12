@@ -46,7 +46,7 @@ You can launch the Cloudformation template using the AWS Console or using the AW
 - Upload your Docker Datacenter license to an S3 bucket.
 - Run the following Docker container from your local or dev environment:
 
-	```
+```
 docker run --env AWS_ACCESS_KEY_ID=<AWS_ACCESS_KEY_ID> \
 --env AWS_SECRET_ACCESS_KEY=<AWS_SECRET_ACCESS_KEY> \
 --env AWS_DEFAULT_REGION=<AWS_REGION> \
@@ -63,7 +63,7 @@ ParameterKey=DTRInstanceType,ParameterValue=<INSTANCE_TYPE> \
 ParameterKey=UCPNodesInstanceType,ParameterValue=<INSTANCE_TYPE> \
 ParameterKey=ClusterSize,ParameterValue=<CLUSTER_SIZE> \
 ParameterKey=License,ParameterValue=<YOUR_DDC_LICENSE_S3_URL>
-	```
+```
 
 - Once all done ( it does take between 20-30 mins), you can get stack outputs such as UCP and DTR URLs directly from CLI as follows:
 
